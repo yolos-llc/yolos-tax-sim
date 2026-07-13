@@ -32,6 +32,7 @@ header .wrap{display:flex;flex-direction:column;gap:4px}
 h1{font-size:22px;line-height:1.4;letter-spacing:.02em}
 .lead{font-size:13px;color:#C9D4E8}
 .userbar{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+.userbar[hidden]{display:none}
 .uchip{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border-radius:999px;padding:4px 14px 4px 6px;font-size:13px;font-weight:700}
 .uchip .av{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff}
 .hbtn{min-height:36px;padding:0 14px;border-radius:999px;border:1px solid rgba(255,255,255,.4);background:none;color:#fff;font-size:12px;font-weight:700;cursor:pointer}
@@ -117,6 +118,20 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--navy-2);outline
 .pinrow{display:flex;gap:8px;padding:0 16px 14px;align-items:center}
 .pinrow input{max-width:150px;text-align:center;letter-spacing:8px;font-size:20px}
 .pinrow .perr{font-size:12px;color:var(--err);font-weight:700}
+
+/* 管理者ダッシュボード */
+.aucard{background:#fff;border:1px solid var(--line);border-radius:var(--r2);box-shadow:var(--shadow);padding:16px;margin-bottom:12px}
+.aucard .ahead{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.aucard .av{flex:none;width:38px;height:38px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px}
+.aucard .aname{font-weight:700;line-height:1.4}
+.aucard .aname small{display:block;font-size:11px;color:var(--ink-3);font-weight:400}
+.aucard .ahead .gobtn{margin-left:auto;flex:none;min-height:40px;padding:0 12px;border-radius:var(--r1);border:1.5px solid var(--navy-2);background:#fff;color:var(--navy);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.aucard .ahead .gobtn:hover{background:#EEF2F9}
+.agrid{display:grid;grid-template-columns:1fr;gap:2px 16px;font-size:13px}
+@media(min-width:600px){.agrid{grid-template-columns:repeat(2,1fr)}}
+.agrid>div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed var(--line);padding:5px 0}
+.agrid b.warn{color:var(--orange-2)}
+.agrid b.okc{color:var(--ok)}
 
 /* ウィザード */
 .wiz-progress{display:flex;gap:6px;margin-bottom:var(--s3)}
@@ -335,7 +350,7 @@ footer .wrap{font-size:12px;color:var(--ink-3);line-height:1.8}
     <div class="userbar" id="userbar" hidden>
       <span class="uchip" id="uchip"></span>
       <button type="button" class="hbtn" id="btnSettings">⚙ 設定</button>
-      <button type="button" class="hbtn" id="btnLogout">ユーザー切替</button>
+      <button type="button" class="hbtn" id="btnLogout">ログアウト</button>
     </div>
   </div>
 </header>
@@ -362,6 +377,29 @@ footer .wrap{font-size:12px;color:var(--ink-3);line-height:1.8}
         <button type="button" class="btn primary" id="btnCreateUser">この名前で始める</button>
         <button type="button" class="btn" id="btnCancelNew">キャンセル</button>
       </div>
+    </div>
+    <div style="margin-top:32px;padding-top:12px;border-top:1px dashed var(--line);text-align:center">
+      <button type="button" class="undo" id="btnAdminEntry">管理者の方はこちら</button>
+      <div id="adminPassForm" hidden style="text-align:left;margin-top:8px">
+        <label class="flabel" for="adminPass" id="adminPassLabel">管理者コード</label>
+        <input type="password" id="adminPass" maxlength="8" autocomplete="off" placeholder="コードを入力">
+        <p id="adminPassErr" hidden style="font-size:12px;color:var(--err);font-weight:700;margin-top:4px">コードがちがいます</p>
+        <div class="btnrow"><button type="button" class="btn primary" id="btnAdminGo">管理画面をひらく</button></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ================= 管理者 ================= -->
+<main class="wrap scr" id="scr-admin">
+  <section class="card">
+    <h2><span class="step">👑</span>管理者ダッシュボード</h2>
+    <p class="note-s">この端末に登録されているユーザーの状況一覧です。データは各メンバーの端末内に保存されるため、<b>別の端末で使っている人はここに表示されません</b>（全員分をネット越しに見るにはサーバー版が必要です）。</p>
+    <div class="dgrid" id="adminSummary" style="margin:16px 0"></div>
+    <div id="adminList"></div>
+    <div class="btnrow">
+      <button type="button" class="btn" id="btnAdminBack">ログイン画面にもどる</button>
+      <button type="button" class="btn" id="btnAdminPinChange">管理者コードを変更</button>
     </div>
   </section>
 </main>
@@ -1272,7 +1310,8 @@ const KB=[
   {k:["支払った 間違え","戻す","取り消し","誤って"], a:"「支払った」を押した直後なら、画面下に出る黒い通知の「元に戻す」で戻せます。あとからまとめて戻す場合は、やることリスト下部の「すべて元に戻す」を使ってください。"},
   {k:["領収書","レシート","アップロード","写真","画像"], a:"「領収書ボックス」の📷ボタンから追加できます（スマホならその場で撮影OK・複数枚可）。種類・年月・メモをつけて保存され、確定申告のときにここを見返すだけで済みます。画像はこの端末の中だけに保存されます。"},
   {k:["機種変更","データ 消え","引き継ぎ","別の端末","バックアップ"], a:"データ（入力・領収書）はこの端末のブラウザの中だけに保存されていて、別の端末には自動で引き継がれません。機種変更の前に、領収書は端末の写真アプリにも残しておく＋売上はメモしておくのが安全です。会計ソフトに毎月転記しておけば、このアプリのデータが消えても困りません。"},
-  {k:["ログイン","ユーザー","パスワード","ロック","切替","pin"], a:"右上の「ユーザー切替」で別の人に交代できます。ロック番号（4桁）は⚙設定のアカウント欄でいつでも変更・解除できます。データは人ごとに分かれて端末内に保存され、外部には送信されません。"},
+  {k:["ログイン","ログアウト","ユーザー","パスワード","ロック","pin","自動"], a:"一度ログインすれば、この端末では次から自動ログインになります（右上の「ログアウト」を押すまで維持）。ロック番号（4桁）は⚙設定のアカウント欄で変更・解除できます。データは人ごとに端末内保存で、外部には送信されません。"},
+  {k:["管理者","管理画面","全員","一括"], a:"管理者は、ログイン画面のいちばん下「管理者の方はこちら」から管理者コードでダッシュボードに入れます（初回にコードを設定）。この端末に登録された全ユーザーの売上見込み・税額・期限切れ・未入力・領収書枚数が一覧できます。※各メンバーの端末のデータは見えません（端末内保存のため）。"},
   {k:["設定 変え","条件 変え","開始月 変え","青色 変え"], a:"右上の⚙設定から、働き方・開始月・売上見込み・経費・青色申告・年齢をいつでも変えられます。保存すると全部の金額が計算し直されます。"},
   // ===== 開業・届出 =====
   {k:["開業届","開業とどけ","かいぎょう","届出"], a:"開業届は「個人で仕事を始めました」という税務署へのお知らせの紙です。開業から1ヶ月以内が原則ですが、過ぎていても罰則はないので気づいた今出せばOK。書き方は配布の「届出完全ガイド」に全欄の記入例があります。e-Taxならスマホで出せます。"},
@@ -1368,6 +1407,67 @@ function initBot(){
   });
 }
 
+/* ---------- 管理者 ---------- */
+const APKEY="yolos-tax-adminpin";
+function adminMetrics(st){
+  const r=simulate(st);
+  const now=new Date(); const cy=now.getFullYear(), cm=now.getMonth()+1, cd=now.getDate();
+  const [sy,sm]=st.startYM.split("-").map(Number);
+  const idxCur=(cy-sy)*12+(cm-sm);
+  const tod=cy*10000+cm*100+cd;
+  let oc=0, os=0;
+  r.schedule.forEach(mm=>{
+    if(mm.idx<=idxCur && mm.idx>=0) mm.items.forEach(it=>{
+      if(!it.ev && it.amt>0 && !st.paid[it.k] && (it.d.dy*10000+it.d.dm*100+it.d.dd)<tod){ oc++; os+=it.amt; }
+    });
+  });
+  let miss=0;
+  if(idxCur>0){
+    for(let i=Math.max(0,idxCur-48);i<Math.min(idxCur,48);i++){
+      const y=sy+Math.floor((sm-1+i)/12);
+      if(y===cy && st.overrides[i]==null) miss++;
+    }
+  }
+  const ys=r.yearSummary.find(x=>x.y===cy)||{rev:0,it:0};
+  return {oc,os,miss,rev:ys.rev,it:ys.it,setAside:r.setAside};
+}
+async function renderAdmin(){
+  const all=await idbAll();
+  const rows=[]; let sumOc=0,sumOs=0,sumMiss=0;
+  for(const u of users){
+    const st=loadState(u.id);
+    const mt=st.setupDone?adminMetrics(st):null;
+    const rc=all.filter(r=>r.uid===u.id).length + lsRecAll(u.id).length;
+    if(mt){ sumOc+=mt.oc; sumOs+=mt.os; sumMiss+=mt.miss; }
+    rows.push({u,st,mt,rc});
+  }
+  $("#adminSummary").innerHTML=
+    '<div class="dcard"><span class="dt">登録ユーザー</span><span class="dv">'+users.length+'人</span><span class="ds">この端末内</span></div>'+
+    (sumOc?'<div class="dcard alert"><span class="dt">⚠ 期限切れ合計</span><span class="dv">'+yen(sumOs)+'</span><span class="ds">'+sumOc+'件（全員分）</span></div>'
+          :'<div class="dcard ok"><span class="dt">期限切れ合計</span><span class="dv">なし</span><span class="ds">全員処理済み</span></div>')+
+    (sumMiss?'<div class="dcard alert"><span class="dt">売上の未入力</span><span class="dv">'+sumMiss+'ヶ月分</span><span class="ds">全員合計</span></div>'
+            :'<div class="dcard ok"><span class="dt">売上の未入力</span><span class="dv">なし</span><span class="ds">全員入力済み</span></div>');
+  const typeLabel={shinsotsu:"新卒・学生から",taishoku:"会社を辞めて",fukugyo:"副業"};
+  $("#adminList").innerHTML = rows.length ? rows.map(({u,st,mt,rc})=>{
+    const head='<div class="ahead"><span class="av" style="background:'+avColor(u.name)+'">'+u.name.slice(0,1)+'</span>'+
+      '<span class="aname">'+u.name+(u.pin?" 🔒":"")+'<small>'+(st.setupDone?(typeLabel[st.type]+'／開始 '+st.startYM.replace("-","年")+'月'):'初期設定が未完了')+'</small></span>'+
+      '<button type="button" class="gobtn" data-open="'+u.id+'">この人の画面を開く</button></div>';
+    if(!mt) return '<div class="aucard">'+head+'</div>';
+    return '<div class="aucard">'+head+'<div class="agrid">'+
+      '<div><span>今年の売上</span><b>'+yen(mt.rev)+'</b></div>'+
+      '<div><span>所得税見込み</span><b>約'+yen(mt.it)+'</b></div>'+
+      '<div><span>よけておく額</span><b>'+yen(mt.setAside)+'／月</b></div>'+
+      '<div><span>⚠ 期限切れ</span>'+(mt.oc?'<b class="warn">'+mt.oc+'件 '+yen(mt.os)+'</b>':'<b class="okc">なし</b>')+'</div>'+
+      '<div><span>売上の未入力</span>'+(mt.miss?'<b class="warn">'+mt.miss+'ヶ月</b>':'<b class="okc">なし</b>')+'</div>'+
+      '<div><span>領収書</span><b>'+rc+'枚</b></div>'+
+      '</div></div>';
+  }).join("") : '<p class="note">まだ誰も登録されていません。</p>';
+  document.querySelectorAll("#adminList [data-open]").forEach(b=>b.addEventListener("click",()=>{
+    const u=users.find(x=>x.id===b.dataset.open);
+    if(u) login(u);                      // 管理者コード確認済みのためロックはスキップ
+  }));
+}
+
 /* ---------- イベント ---------- */
 function bind(){
   $("#btnNewUser").addEventListener("click",()=>{ $("#newUserForm").hidden=false; $("#nuName").focus(); });
@@ -1382,8 +1482,36 @@ function bind(){
     $("#newUserForm").hidden=true; $("#nuName").value=""; $("#nuPin").value="";
     login(u);
   });
-  $("#btnLogout").addEventListener("click",logout);
+  $("#btnLogout").addEventListener("click",()=>{
+    if(confirm("ログアウトしますか？（データは端末に残ります。次に開くと名前の選択から始まります）")) logout();
+  });
   $("#btnSettings").addEventListener("click",()=>{ syncSettingsUI(); show("scr-settings"); });
+
+  // 管理者
+  $("#btnAdminEntry").addEventListener("click",()=>{
+    const f=$("#adminPassForm"); f.hidden=!f.hidden;
+    $("#adminPassLabel").textContent = localStorage.getItem(APKEY) ? "管理者コード" : "はじめての設定：管理者コードを決めて入力（4〜8文字）";
+    if(!f.hidden) $("#adminPass").focus();
+  });
+  $("#btnAdminGo").addEventListener("click",()=>{
+    const v=$("#adminPass").value.trim();
+    const saved=localStorage.getItem(APKEY);
+    if(!saved){
+      if(v.length<4){ alert("4文字以上で決めてください"); return; }
+      localStorage.setItem(APKEY,v);
+      toast("管理者コードを設定しました");
+    }else if(v!==saved){
+      $("#adminPassErr").hidden=false; $("#adminPass").value=""; $("#adminPass").focus(); return;
+    }
+    $("#adminPassErr").hidden=true; $("#adminPass").value=""; $("#adminPassForm").hidden=true;
+    renderAdmin().then(()=>show("scr-admin"));
+  });
+  $("#adminPass").addEventListener("keydown",e=>{ if(e.key==="Enter") $("#btnAdminGo").click(); });
+  $("#btnAdminBack").addEventListener("click",()=>{ renderLogin(); show("scr-login"); });
+  $("#btnAdminPinChange").addEventListener("click",()=>{
+    const v=prompt("新しい管理者コード（4〜8文字）を入力");
+    if(v && v.trim().length>=4){ localStorage.setItem(APKEY,v.trim()); toast("管理者コードを変更しました"); }
+  });
 
   document.querySelectorAll("#segType button").forEach(b=>{
     b.addEventListener("click",()=>{
@@ -1440,9 +1568,8 @@ function bind(){
 /* ---------- 起動 ---------- */
 loadUsers(); migrateLegacy(); loadUsers(); bind();
 idbOpen().then(()=>{
-  const lastId=localStorage.getItem(LKEY);
-  const lastUser=users.find(u=>u.id===lastId);
-  if(lastUser && !lastUser.pin){ login(lastUser); }
+  const lastUser=users.find(u=>u.id===localStorage.getItem(LKEY));
+  if(lastUser){ login(lastUser); }   // 一度ログインした端末では自動ログイン（「ログアウト」を押すまで維持）
   else{ renderLogin(); show("scr-login"); }
 });
 </script>

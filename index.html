@@ -833,6 +833,8 @@ function save(){ if(me){ localStorage.setItem(DKEY(me.id), JSON.stringify(state)
 
 /* ---------- サーバー同期（Google Apps Script） ---------- */
 const SYNC_URL="https://script.google.com/macros/s/AKfycbwW-4tRDWP8vM_Edzilq8J0ECEVeXR2rQTP2WtXlyB2UQEGJU7ejNvrMviStnI7eOua/exec";   // サーバー同期ON
+const SERVER_ADMIN_CODE=atob("dGVzdGFkbWlu");   // サーバー側の照合コード（管理者は画面で自分のコードを別途設定）
+const HIDDEN_UIDS=["u-test01"];                 // 管理一覧から隠すテスト用uid
 let syncTimer=null;
 function scheduleSync(){
   if(!SYNC_URL||!me||!state||!state.setupDone) return;
@@ -1473,11 +1475,12 @@ async function renderAdminServer(code){
   if(!SYNC_URL){ box.innerHTML='<p class="note-s">サーバー同期は未設定です（設定するとメンバー全員の端末のデータをここで一覧できます）。</p>'; return; }
   box.innerHTML='<p class="note-s">サーバーから読み込み中…</p>';
   try{
-    const r=await fetchServerUsers(code);
+    const r=await fetchServerUsers(SERVER_ADMIN_CODE);
     if(!r.ok){
-      box.innerHTML='<p class="note-s" style="color:var(--err)">'+(r.err==="wrong code"?"サーバーの管理者コードと一致しません（最初にサーバーへアクセスしたときのコードが登録されています）":"サーバーエラー："+r.err)+'</p>';
+      box.innerHTML='<p class="note-s" style="color:var(--err)">サーバーエラー：'+r.err+'</p>';
       return;
     }
+    r.users=(r.users||[]).filter(u=>HIDDEN_UIDS.indexOf(u.uid)<0);
     if(!r.users.length){ box.innerHTML='<p class="note-s">まだ誰も同期されていません。各メンバーがアプリを開いて入力すると自動で届きます。</p>'; return; }
     const typeLabel={shinsotsu:"新卒・学生から",taishoku:"会社を辞めて",fukugyo:"副業"};
     let oc=0, os=0, miss=0;
@@ -1574,9 +1577,8 @@ function bind(){
     }else if(v!==saved){
       $("#adminPassErr").hidden=false; $("#adminPass").value=""; $("#adminPass").focus(); return;
     }
-    const codeUsed = saved || v;
     $("#adminPassErr").hidden=true; $("#adminPass").value=""; $("#adminPassForm").hidden=true;
-    renderAdmin(codeUsed).then(()=>show("scr-admin"));
+    renderAdmin(SERVER_ADMIN_CODE).then(()=>show("scr-admin"));
   });
   $("#adminPass").addEventListener("keydown",e=>{ if(e.key==="Enter") $("#btnAdminGo").click(); });
   $("#btnAdminBack").addEventListener("click",()=>{ renderLogin(); show("scr-login"); });

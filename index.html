@@ -237,6 +237,13 @@ a.dcard:focus-visible{outline:2px solid var(--navy-2);outline-offset:1px}
 .tbadge.late{background:var(--orange);color:#fff}
 .tbadge.soon{background:#EEF2F9;color:var(--navy)}
 .tbadge.sales{background:var(--gold);color:#fff}
+.tbadge.done{background:var(--okbg);color:var(--ok)}
+.task.done{background:#FCFCFA}
+.task .unpaybtn{flex:none;min-height:40px;padding:0 12px;border-radius:var(--r1);border:1.5px solid var(--line);background:#fff;color:var(--ink-3);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.task .unpaybtn:hover{background:#F2F2EF;color:var(--ink)}
+.paidwrap{margin-top:10px;border-top:1px dashed var(--line);padding-top:2px}
+.paidwrap summary{cursor:pointer;font-size:12px;color:var(--ink-3);padding:8px 0;min-height:32px;font-weight:700}
+.paidwrap summary:hover{color:var(--ink)}
 .alldone{background:var(--okbg);border:1px solid #BFE3D2;border-radius:var(--r1);padding:12px 14px;font-size:13px;color:var(--ok);font-weight:700}
 .undo{background:none;border:none;font-size:12px;color:var(--ink-3);text-decoration:underline;cursor:pointer;padding:8px 0;min-height:32px;font-family:inherit}
 
@@ -1026,7 +1033,7 @@ function renderLogin(){
 }
 function login(u){
   me=u; localStorage.setItem(LKEY,u.id);
-  state=loadState(u.id);
+  state=loadState(u.id); paidOpen=false;
   $("#uchip").innerHTML='<span class="av" style="background:'+avColor(me.name)+'">'+me.name.slice(0,1)+'</span>'+me.name+' さん';
   loadReceipts().then(()=>{ if(state.setupDone) renderReceipts(); });
   if(!state.setupDone){ startWizard(); }
@@ -1175,6 +1182,7 @@ function jumpToSales(i){
 }
 
 /* ---------- メイン描画 ---------- */
+let paidOpen=false;   // 支払済み一覧の開閉状態（再描画をまたいで維持）
 function render(){
   save();
   const r=simulate(state);
@@ -1251,6 +1259,8 @@ function render(){
   const lateSum=lateT.reduce((s,t)=>s+t.amt,0);
   const ordered=[...lateT, ...salesTasks, ...soonT];
   const paidCount=Object.keys(state.paid).length;
+  const paidItems=[];
+  r.schedule.forEach(mm=>{ mm.items.forEach(it=>{ if(!it.ev&&it.k&&state.paid[it.k]&&!paidItems.some(p=>p.k===it.k)) paidItems.push({...it}); }); });
   $("#taskCountLabel").textContent=ordered.length?`　全${ordered.length}件`:"";
   let tl="";
   if(ordered.length){
@@ -1269,7 +1279,14 @@ function render(){
   }else{
     tl='<p class="note">まだ開始前です。開始月になるとここにやることが表示されます。</p>';
   }
-  if(paidCount>0) tl+='<button type="button" class="undo" id="btnUnpay">「支払った」にした '+paidCount+' 件をすべて元に戻す</button>';
+  if(paidCount>0){
+    const ghost=paidCount-paidItems.length;
+    tl+='<details class="paidwrap" id="paidWrap"'+(paidOpen?" open":"")+'><summary>✔ 支払済みにした '+paidCount+'件を見る（間違えたら1件ずつ戻せます）</summary>'+
+      paidItems.map(p=>'<div class="task done"><span class="tl"><span class="tbadge done">✔ 支払済</span>'+p.label+'<small>納付期限：'+dueLong(p.d)+'</small></span><span class="ta">'+yen(p.amt)+'</span>'+
+        '<button type="button" class="unpaybtn" data-unpay="'+p.k+'" data-lb="'+p.label+'">元に戻す</button></div>').join("")+
+      (ghost>0?'<p class="note-s">※ 設定変更前の支払い記録が '+ghost+' 件あります（まとめて戻すと消えます）</p>':'')+
+      '<button type="button" class="undo" id="btnUnpay">すべて元に戻す（'+paidCount+'件）</button></details>';
+  }
   $("#taskList").innerHTML=tl;
 
   // ---- スケジュール ----
@@ -1324,8 +1341,20 @@ function render(){
     ks.forEach(k=>{state.paid[k]=true;}); render();
     toast(ks.length+"件を支払済みにしました", ()=>{ ks.forEach(k=>delete state.paid[k]); render(); });
   });
+  document.querySelectorAll("#taskList [data-unpay]").forEach(b=>b.addEventListener("click",()=>{
+    const k=b.dataset.unpay;
+    delete state.paid[k]; paidOpen=true; render();
+    toast(b.dataset.lb+" を未払いに戻しました", ()=>{ state.paid[k]=true; render(); });
+  }));
+  const pw=document.getElementById("paidWrap");
+  if(pw) pw.addEventListener("toggle",()=>{ paidOpen=pw.open; });
   const up=document.getElementById("btnUnpay");
-  if(up) up.addEventListener("click",()=>{ state.paid={}; render(); });
+  if(up) up.addEventListener("click",()=>{
+    if(!confirm("支払済みにした "+paidCount+" 件をすべて未払いに戻します。よろしいですか？")) return;
+    const bak={...state.paid};
+    state.paid={}; render();
+    toast("すべて未払いに戻しました", ()=>{ state.paid=bak; render(); });
+  });
 }
 
 /* ---------- 質問ボット ---------- */
@@ -1336,7 +1365,7 @@ const KB=[
   {k:["金額が合わない","ずれ","違う","概算","正確","本当","あってる"], a:"このアプリの金額は概算です（令和7〜8年度の公式の料率・控除で計算）。国保は自治体で料率が少し違うため±1〜2割前後の誤差があります。正確な金額は届く納付書と確定申告で確定します。控除の拾い漏れがあるぶん、実際はここより安くなることが多い設計です。"},
   {k:["見込み","実績","未入力","入力済み"], a:"売上の入力表で、終わった月に実額を入れると「実績」として税額計算に反映されます。未入力の月は「ふつうの月の売上」（⚙設定）の見込み額で計算します。実績を入れるほど「いまの見込み」が正確になります。"},
   {k:["期限切れ","おそい","遅れてる","赤い","オレンジ"], a:"「⚠期限切れ」は納付期限の日付が過ぎている未払いです。気づいたら早めに払えばほぼ大ごとになりません（少額の延滞金で済みます）。払ったら「支払った」を押して消してください。"},
-  {k:["支払った 間違え","戻す","取り消し","誤って"], a:"「支払った」を押した直後なら、画面下に出る黒い通知の「元に戻す」で戻せます。あとからまとめて戻す場合は、やることリスト下部の「すべて元に戻す」を使ってください。"},
+  {k:["支払った 間違え","戻す","取り消し","誤って"], a:"間違えて「支払った」を押しても大丈夫！やることリスト下部の「✔ 支払済みにした◯件を見る」を開くと、1件ずつ「元に戻す」ボタンで戻せます。押した直後なら画面下の黒い通知の「元に戻す」でもOK。まとめて戻す「すべて元に戻す」もあります。"},
   {k:["領収書","レシート","アップロード","写真","画像"], a:"「領収書ボックス」の📷ボタンから追加できます（スマホならその場で撮影OK・複数枚可）。種類・年月・メモをつけて保存され、確定申告のときにここを見返すだけで済みます。画像はこの端末の中だけに保存されます。"},
   {k:["機種変更","データ 消え","引き継ぎ","別の端末","バックアップ"], a:"売上などの入力データは会社の管理サーバーに自動同期されているので、消えても管理者が確認できます（新端末への自動復元はまだ未対応なので、機種変更したら初期設定をやり直して売上を入れ直してください）。領収書の画像だけは端末内のみの保存なので、機種変更前に端末の写真アプリにも残しておくと安全です。"},
   {k:["ログイン","ログアウト","ユーザー","パスワード","ロック","pin","自動"], a:"一度ログインすれば、この端末では次から自動ログインになります（右上の「ログアウト」を押すまで維持）。ロック番号（4桁）は⚙設定のアカウント欄で変更・解除できます。入力データは端末に保存され、管理用に会社のサーバーへも自動同期されます（領収書の画像は端末内のみ）。"},

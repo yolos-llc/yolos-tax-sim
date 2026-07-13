@@ -412,6 +412,7 @@ footer .wrap{font-size:12px;color:var(--ink-3);line-height:1.8}
         <input type="password" id="adminPass" maxlength="8" autocomplete="off" placeholder="コードを入力">
         <p id="adminPassErr" hidden style="font-size:12px;color:var(--err);font-weight:700;margin-top:4px">コードがちがいます</p>
         <div class="btnrow"><button type="button" class="btn primary" id="btnAdminGo">管理画面をひらく</button></div>
+        <button type="button" class="undo" id="btnAdminForgot" style="margin-top:4px">コードを忘れた場合（この端末で決め直す）</button>
       </div>
     </div>
   </section>
@@ -1600,7 +1601,9 @@ async function renderAdminServer(code){
   if(!SYNC_URL){ box.innerHTML='<p class="note-s">サーバー同期は未設定です（設定するとメンバー全員の端末のデータをここで一覧できます）。</p>'; return; }
   box.innerHTML='<p class="note-s">サーバーから読み込み中…</p>';
   try{
-    const r=await fetchServerUsers(adminCodeCur);
+    let r;
+    try{ r=await fetchServerUsers(adminCodeCur); }
+    catch(e1){ await new Promise(res=>setTimeout(res,1500)); r=await fetchServerUsers(adminCodeCur); }   // 一時的な接続エラーは1回だけ自動再試行
     if(!r.ok){
       box.innerHTML='<p class="note-s" style="color:var(--err)">サーバーエラー：'+escAttr(r.err)+'</p>';
       return;
@@ -1634,7 +1637,10 @@ async function renderAdminServer(code){
       renderAdminServer(adminCodeCur);
     }));
   }catch(e){
-    box.innerHTML='<p class="note-s" style="color:var(--err)">サーバーに接続できませんでした（電波・URL設定を確認）</p>';
+    box.innerHTML='<p class="note-s" style="color:var(--err)">サーバーに接続できませんでした（電波を確認してください）</p>'+
+      '<button type="button" class="btn" id="btnAdminRetry" style="min-height:40px">サーバーの一覧を再読み込み</button>';
+    const rb=document.getElementById("btnAdminRetry");
+    if(rb) rb.addEventListener("click",()=>renderAdminServer(adminCodeCur));
   }
 }
 async function deleteServerUser(uid){
@@ -1761,6 +1767,14 @@ function bind(){
     renderAdmin(localStorage.getItem(APKEY)).then(()=>show("scr-admin"));
   });
   $("#adminPass").addEventListener("keydown",e=>{ if(e.key==="Enter") $("#btnAdminGo").click(); });
+  $("#btnAdminForgot").addEventListener("click",()=>{
+    if(!confirm("この端末の管理者コードを消して、決め直します。よろしいですか？\n（サーバー側のコードが登録済みの場合は、以前と同じコードにしないと全員一覧は開けません）")) return;
+    localStorage.removeItem(APKEY);
+    $("#adminPassErr").hidden=true; $("#adminPass").value="";
+    $("#adminPassLabel").textContent="はじめての設定：管理者コードを決めて入力（4〜8文字）";
+    $("#adminPass").focus();
+    toast("コードをリセットしました。新しいコードを決めて入力してください");
+  });
   $("#btnAdminBack").addEventListener("click",()=>{ renderLogin(); show("scr-login"); });
   $("#btnAdminPinChange").addEventListener("click",()=>{
     const v=prompt("新しい管理者コード（4〜8文字）を入力");

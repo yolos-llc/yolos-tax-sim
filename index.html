@@ -281,6 +281,22 @@ a.dcard:focus-visible{outline:2px solid var(--navy-2);outline-offset:1px}
   .rec .rmeta input.rmemo{grid-column:1/3}
 }
 .recempty{font-size:13px;color:var(--ink-3);background:var(--bg);border-radius:var(--r1);padding:14px;text-align:center;margin-top:var(--s2)}
+/* 管理者：サーバー領収書ギャラリー */
+.recgal{position:fixed;inset:0;background:rgba(10,16,30,.55);z-index:55;display:none;align-items:center;justify-content:center;padding:16px}
+.recgal.on{display:flex}
+.rgbox{background:#fff;border-radius:var(--r2);max-width:520px;width:100%;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--shadow)}
+.rghead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.rghead b{font-size:14px}
+.rghead .gobtn{flex:none;min-height:40px;padding:0 14px;border-radius:var(--r1);border:1.5px solid var(--navy-2);background:#fff;color:var(--navy);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.rglist{padding:12px 14px;overflow-y:auto}
+.rgitem{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:var(--r1);padding:8px 10px;margin-bottom:8px}
+.rgitem .rgi{flex:1;font-size:13px;min-width:0}
+.rgitem .rgi small{display:block;color:var(--ink-3);font-size:11px}
+.rgitem .gobtn{flex:none;min-height:40px;padding:0 12px;border-radius:var(--r1);border:1.5px solid var(--navy-2);background:#fff;color:var(--navy);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.rgitem .rgdel{flex:none;border:none;background:none;font-size:16px;cursor:pointer;min-height:40px;min-width:36px}
+.aucard .ahead .recbtn{margin-left:auto;flex:none;min-height:36px;padding:0 12px;border-radius:var(--r1);border:1.5px solid var(--navy-2);background:#fff;color:var(--navy);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.aucard .ahead .recbtn:hover{background:#EEF2F9}
+.aucard .ahead .recbtn+.audel{margin-left:0}
 .imgview{position:fixed;inset:0;background:rgba(10,16,30,.85);z-index:60;display:none;align-items:center;justify-content:center;padding:16px;flex-direction:column;gap:12px}
 .imgview.on{display:flex}
 .imgview img{max-width:100%;max-height:80vh;border-radius:8px;background:#fff}
@@ -370,7 +386,7 @@ footer .wrap{font-size:12px;color:var(--ink-3);line-height:1.8}
   <section class="card">
     <div class="login-hero">
       <p class="big">ようこそ 👋</p>
-      <p class="note">お名前を選んではじめましょう。はじめての方は下のボタンからどうぞ。<br><span class="note-s">データは会社の管理サーバーに安全に保存されます（領収書の画像はこの端末内のみ）。</span></p>
+      <p class="note">お名前を選んではじめましょう。はじめての方は下のボタンからどうぞ。<br><span class="note-s">データは領収書の画像も含めて、会社の管理サーバーに安全に保存されます。</span></p>
     </div>
     <div class="userlist" id="userlist"></div>
     <div class="btnrow"><button type="button" class="btn primary wide" id="btnNewUser">＋ 新しく始める（はじめての人）</button></div>
@@ -495,7 +511,7 @@ footer .wrap{font-size:12px;color:var(--ink-3);line-height:1.8}
       <button type="button" class="btn danger" id="btnReset">データをリセット</button>
       <button type="button" class="btn danger" id="btnDeleteUser">このユーザーを削除</button>
     </div>
-    <p class="note-s" style="margin-top:8px">入力・領収書はこの端末に自動保存されます。売上などの入力データは会社の管理サーバーにも自動同期されます（領収書の画像は端末内のみ）。</p>
+    <p class="note-s" style="margin-top:8px">入力・領収書はこの端末に自動保存され、売上などの入力データと領収書の画像は会社の管理サーバーにも自動同期されます。</p>
   </section>
 </main>
 
@@ -587,6 +603,7 @@ footer .wrap{font-size:12px;color:var(--ink-3);line-height:1.8}
   </form>
 </div>
 
+<div class="recgal" id="recGal"><div class="rgbox"><div class="rghead"><b id="rgTitle"></b><button type="button" class="gobtn" id="rgClose">閉じる</button></div><div class="rglist" id="rgList"></div></div></div>
 <div class="imgview" id="imgView"><img id="imgViewImg" alt="領収書の拡大表示"><button type="button" id="imgViewClose">閉じる</button></div>
 <div class="toast" id="toast"><span id="toastMsg"></span><button type="button" id="toastUndo" hidden>元に戻す</button></div>
 
@@ -843,8 +860,10 @@ function save(){ if(me){ localStorage.setItem(DKEY(me.id), JSON.stringify(state)
 
 /* ---------- サーバー同期（Google Apps Script） ---------- */
 const SYNC_URL="https://script.google.com/macros/s/AKfycbwW-4tRDWP8vM_Edzilq8J0ECEVeXR2rQTP2WtXlyB2UQEGJU7ejNvrMviStnI7eOua/exec";   // サーバー同期ON
-const SERVER_ADMIN_CODE=atob("dGVzdGFkbWlu");   // サーバー側の照合コード（管理者は画面で自分のコードを別途設定）
+// サーバー照合は、管理者が管理画面で入力したコードをそのまま使う
+// （サーバー側は初回に届いたコードを正として登録＝first-set-wins。固定コードの埋め込みはしない）
 const HIDDEN_UIDS=["u-test01"];                 // 管理一覧から隠すテスト用uid
+let adminCodeCur="";                            // いまの管理者コード（管理画面に入った時にセット）
 let syncTimer=null;
 function scheduleSync(){
   if(!SYNC_URL||!me||!state||!state.setupDone) return;
@@ -862,6 +881,49 @@ async function fetchServerUsers(code){
   const res=await fetch(SYNC_URL,{method:"POST",headers:{"Content-Type":"text/plain"},
     body:JSON.stringify({action:"adminAll",code})});
   return res.json();
+}
+
+/* ---------- 領収書のサーバー保存 ---------- */
+// rec.sv: undefined=未送信 / 1=サーバー保存済み / 2=送信しない（サイズ超過等・端末内のみ）
+function recPersist(rec){
+  if(rec._ls){ const arr=lsRecAll(rec.uid).map(x=>x.id===rec.id?{...rec,_ls:undefined}:x); lsRecSaveAll(rec.uid,arr); }
+  else{ idbPut({...rec,_ls:undefined}).catch(()=>{}); }
+}
+let recUploading=false, recUploadAgain=false;
+async function recUploadPending(){
+  if(!SYNC_URL||!me) return;
+  if(recUploading){ recUploadAgain=true; return; }   // 実行中に追加された分は終了後にもう1周
+  recUploading=true;
+  try{
+    do{
+      recUploadAgain=false;
+      for(const rec of [...recCache]){
+        if(!me||rec.uid!==me.id||rec.sv) continue;
+        try{
+          const res=await fetch(SYNC_URL,{method:"POST",headers:{"Content-Type":"text/plain"},
+            body:JSON.stringify({action:"recUpload",uid:me.id,rec:{id:rec.id,ym:rec.ym,kind:rec.kind,memo:rec.memo,ts:rec.ts,data:rec.data}})});
+          const j=await res.json();
+          if(j.ok){ rec.sv=1; recPersist(rec); }
+          else if(j.err==="too large"||j.err==="bad image"){ rec.sv=2; recPersist(rec); renderReceipts(); }  // この画像は端末内のみに
+          else if(j.err==="unknown action"){ return; }   // サーバーが旧版 → 次回開いた時に再送
+          else{                                          // その他のエラー：この1件だけ3回まで、他の送信はブロックしない
+            rec._tries=(rec._tries||0)+1;
+            if(rec._tries>=3){ rec.sv=2; recPersist(rec); renderReceipts(); }
+          }
+        }catch(e){ return; }               // オフライン → 次回開いた時に再送
+      }
+    }while(recUploadAgain);
+  }finally{ recUploading=false; }
+}
+function recServerMeta(rec){
+  if(!SYNC_URL||rec.sv!==1) return;
+  fetch(SYNC_URL,{method:"POST",headers:{"Content-Type":"text/plain"},
+    body:JSON.stringify({action:"recMeta",uid:rec.uid,rid:rec.id,ym:rec.ym,kind:rec.kind,memo:rec.memo})}).catch(()=>{});
+}
+function recServerDelete(uid,rid){
+  if(!SYNC_URL) return;
+  fetch(SYNC_URL,{method:"POST",headers:{"Content-Type":"text/plain"},
+    body:JSON.stringify({action:"recDelete",uid,rid})}).catch(()=>{});
 }
 function migrateLegacy(){
   try{
@@ -928,6 +990,7 @@ async function addReceiptData(dataURL, kind, ym, memo){
     if(!lsRecSaveAll(me.id,arr)){ toast("保存に失敗しました（端末の空き容量を確認）"); return; }
   }
   recCache.unshift(rec); renderReceipts(); toast("領収書を保存しました");
+  recUploadPending();
 }
 window._addReceiptData=addReceiptData;   // テスト用フック
 async function onRecFiles(files){
@@ -950,6 +1013,7 @@ function renderReceipts(){
         '<select aria-label="種類" data-f="kind">'+REC_KINDS.map(k=>'<option'+(k===r.kind?" selected":"")+'>'+k+'</option>').join("")+'</select>'+
         '<input type="month" aria-label="年月" data-f="ym" value="'+r.ym+'">'+
         '<input type="text" class="rmemo" aria-label="メモ" data-f="memo" placeholder="メモ（例：4月分・コンビニ払い）" value="'+(r.memo||"").replace(/"/g,"&quot;")+'" maxlength="40">'+
+        (r.sv===2?'<div class="note-s" style="color:var(--err)">⚠ サーバー未保存（この端末内のみ。念のため写真アプリにも残してください）</div>':'')+
       '</div>'+
       '<button type="button" class="rdel" aria-label="削除">🗑</button>'+
     '</div>').join("");
@@ -962,13 +1026,14 @@ function renderReceipts(){
       else{ idbPut(rec).catch(()=>{}); }
     };
     el.querySelectorAll("[data-f]").forEach(inp=>{
-      inp.addEventListener("change",()=>{ rec[inp.dataset.f]=inp.value; persist(); });
+      inp.addEventListener("change",()=>{ rec[inp.dataset.f]=inp.value; persist(); recServerMeta(rec); });
     });
     el.querySelector(".rdel").addEventListener("click",async()=>{
       if(!confirm("この領収書を削除しますか？")) return;
       if(rec._ls){ lsRecSaveAll(me.id, lsRecAll(me.id).filter(x=>x.id!==id)); }
       else{ await idbDel(id); }
       recCache=recCache.filter(x=>x.id!==id); renderReceipts();
+      recServerDelete(me.id,id);
     });
   });
 }
@@ -1034,8 +1099,9 @@ function renderLogin(){
 function login(u){
   me=u; localStorage.setItem(LKEY,u.id);
   state=loadState(u.id); paidOpen=false;
+  recCache=[]; $("#recList").innerHTML=""; $("#recCount").textContent="";
   $("#uchip").innerHTML='<span class="av" style="background:'+avColor(me.name)+'">'+me.name.slice(0,1)+'</span>'+me.name+' さん';
-  loadReceipts().then(()=>{ if(state.setupDone) renderReceipts(); });
+  loadReceipts().then(()=>{ if(state.setupDone) renderReceipts(); recUploadPending(); });
   if(!state.setupDone){ startWizard(); }
   else{ syncSettingsUI(); buildGrid(); render(); show("scr-main"); }
 }
@@ -1366,10 +1432,10 @@ const KB=[
   {k:["見込み","実績","未入力","入力済み"], a:"売上の入力表で、終わった月に実額を入れると「実績」として税額計算に反映されます。未入力の月は「ふつうの月の売上」（⚙設定）の見込み額で計算します。実績を入れるほど「いまの見込み」が正確になります。"},
   {k:["期限切れ","おそい","遅れてる","赤い","オレンジ"], a:"「⚠期限切れ」は納付期限の日付が過ぎている未払いです。気づいたら早めに払えばほぼ大ごとになりません（少額の延滞金で済みます）。払ったら「支払った」を押して消してください。"},
   {k:["支払った 間違え","戻す","取り消し","誤って"], a:"間違えて「支払った」を押しても大丈夫！やることリスト下部の「✔ 支払済みにした◯件を見る」を開くと、1件ずつ「元に戻す」ボタンで戻せます。押した直後なら画面下の黒い通知の「元に戻す」でもOK。まとめて戻す「すべて元に戻す」もあります。"},
-  {k:["領収書","レシート","アップロード","写真","画像"], a:"「領収書ボックス」の📷ボタンから追加できます（スマホならその場で撮影OK・複数枚可）。種類・年月・メモをつけて保存され、確定申告のときにここを見返すだけで済みます。画像はこの端末の中だけに保存されます。"},
-  {k:["機種変更","データ 消え","引き継ぎ","別の端末","バックアップ"], a:"売上などの入力データは会社の管理サーバーに自動同期されているので、消えても管理者が確認できます（新端末への自動復元はまだ未対応なので、機種変更したら初期設定をやり直して売上を入れ直してください）。領収書の画像だけは端末内のみの保存なので、機種変更前に端末の写真アプリにも残しておくと安全です。"},
-  {k:["ログイン","ログアウト","ユーザー","パスワード","ロック","pin","自動"], a:"一度ログインすれば、この端末では次から自動ログインになります（右上の「ログアウト」を押すまで維持）。ロック番号（4桁）は⚙設定のアカウント欄で変更・解除できます。入力データは端末に保存され、管理用に会社のサーバーへも自動同期されます（領収書の画像は端末内のみ）。"},
-  {k:["管理者","管理画面","全員","一括","サーバー"], a:"管理者は、ログイン画面のいちばん下「管理者の方はこちら」から管理者コードでダッシュボードに入れます（初回にコードを設定）。サーバーに同期された全メンバーの売上見込み・税額・期限切れ・未入力・領収書枚数と最終同期日を、どの端末からでも一覧できます。"},
+  {k:["領収書","レシート","アップロード","写真","画像"], a:"「領収書ボックス」の📷ボタンから追加できます（スマホならその場で撮影OK・複数枚可）。種類・年月・メモをつけて保存され、確定申告のときにここを見返すだけで済みます。画像はこの端末と会社の管理サーバーの両方に保存されるので、消えても管理者経由で確認できます。"},
+  {k:["機種変更","データ 消え","引き継ぎ","別の端末","バックアップ"], a:"売上などの入力データは会社の管理サーバーに自動同期されているので、消えても管理者が確認できます（新端末への自動復元はまだ未対応なので、機種変更したら初期設定をやり直して売上を入れ直してください）。領収書の画像もサーバーに保存されているので、機種変更しても管理者に見せてもらえます（心配なら端末の写真アプリにも残しておくとより安全）。"},
+  {k:["ログイン","ログアウト","ユーザー","パスワード","ロック","pin","自動"], a:"一度ログインすれば、この端末では次から自動ログインになります（右上の「ログアウト」を押すまで維持）。ロック番号（4桁）は⚙設定のアカウント欄で変更・解除できます。入力データと領収書は端末に保存され、管理用に会社のサーバーへも自動同期されます。"},
+  {k:["管理者","管理画面","全員","一括","サーバー"], a:"管理者は、ログイン画面のいちばん下「管理者の方はこちら」から管理者コードでダッシュボードに入れます（初回にコードを設定）。サーバーに同期された全メンバーの売上見込み・税額・期限切れ・未入力・最終同期日を、どの端末からでも一覧できます。各メンバーの「📷 領収書」ボタンから領収書画像の閲覧・削除もできます。"},
   {k:["設定 変え","条件 変え","開始月 変え","青色 変え"], a:"右上の⚙設定から、働き方・開始月・売上見込み・経費・青色申告・年齢をいつでも変えられます。保存すると全部の金額が計算し直されます。"},
   // ===== 開業・届出 =====
   {k:["開業届","開業とどけ","かいぎょう","届出"], a:"開業届は「個人で仕事を始めました」という税務署へのお知らせの紙です。開業から1ヶ月以内が原則ですが、過ぎていても罰則はないので気づいた今出せばOK。書き方は配布の「届出完全ガイド」に全欄の記入例があります。e-Taxならスマホで出せます。"},
@@ -1489,11 +1555,12 @@ function adminMetrics(st){
   const ys=r.yearSummary.find(x=>x.y===cy)||{rev:0,it:0};
   return {oc,os,miss,rev:ys.rev,it:ys.it,setAside:r.setAside};
 }
-function escAttr(s){ return String(s).replace(/"/g,"&quot;").replace(/</g,"&lt;"); }
-function aucardHTML(name, pin, sub, mt, rc, delUid){
+function escAttr(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function aucardHTML(name, pin, sub, mt, rc, delUid, recUid){
+  const recb = recUid ? '<button type="button" class="recbtn" data-recuser="'+escAttr(recUid)+'" data-recname="'+escAttr(name)+'">📷 領収書</button>' : '';
   const del = delUid ? '<button type="button" class="audel" data-deluser="'+escAttr(delUid)+'" data-delname="'+escAttr(name)+'">削除</button>' : '';
-  const head='<div class="ahead"><span class="av" style="background:'+avColor(name)+'">'+name.slice(0,1)+'</span>'+
-    '<span class="aname">'+name+(pin?" 🔒":"")+'<small>'+sub+'</small></span>'+del+'</div>';
+  const head='<div class="ahead"><span class="av" style="background:'+avColor(name)+'">'+escAttr(name.slice(0,1))+'</span>'+
+    '<span class="aname">'+escAttr(name)+(pin?" 🔒":"")+'<small>'+escAttr(sub)+'</small></span>'+recb+del+'</div>';
   if(!mt) return '<div class="aucard">'+head+'</div>';
   return '<div class="aucard">'+head+'<div class="agrid">'+
     '<div><span>今年の売上</span><b>'+yen(mt.rev)+'</b></div>'+
@@ -1509,9 +1576,9 @@ async function renderAdminServer(code){
   if(!SYNC_URL){ box.innerHTML='<p class="note-s">サーバー同期は未設定です（設定するとメンバー全員の端末のデータをここで一覧できます）。</p>'; return; }
   box.innerHTML='<p class="note-s">サーバーから読み込み中…</p>';
   try{
-    const r=await fetchServerUsers(SERVER_ADMIN_CODE);
+    const r=await fetchServerUsers(adminCodeCur);
     if(!r.ok){
-      box.innerHTML='<p class="note-s" style="color:var(--err)">サーバーエラー：'+r.err+'</p>';
+      box.innerHTML='<p class="note-s" style="color:var(--err)">サーバーエラー：'+escAttr(r.err)+'</p>';
       return;
     }
     r.users=(r.users||[]).filter(u=>HIDDEN_UIDS.indexOf(u.uid)<0 && !(u.state&&u.state.deleted));
@@ -1524,7 +1591,7 @@ async function renderAdminServer(code){
       const upd=u.updatedAt?new Date(u.updatedAt):null;
       const sub=((u.state&&u.state.setupDone)?(typeLabel[u.state.type]+'／開始 '+u.state.startYM.replace("-","年")+'月／'):'初期設定が未完了／')+
         '最終同期 '+(upd?((upd.getMonth()+1)+'/'+upd.getDate()):'-');
-      return aucardHTML(u.name||"?", false, sub, mt, u.recCount||0, u.uid);
+      return aucardHTML(u.name||"?", false, sub, mt, u.recCount||0, u.uid, u.uid);
     }).join("");
     box.innerHTML=
       '<div class="dgrid" style="margin-bottom:12px">'+
@@ -1534,12 +1601,13 @@ async function renderAdminServer(code){
       (miss?'<div class="dcard alert"><span class="dt">売上の未入力</span><span class="dv">'+miss+'ヶ月分</span><span class="ds">全員合計</span></div>'
            :'<div class="dcard ok"><span class="dt">売上の未入力</span><span class="dv">なし</span><span class="ds">全員入力済み</span></div>')+
       '</div>'+cards;
+    box.querySelectorAll("[data-recuser]").forEach(b=>b.addEventListener("click",()=>openRecGallery(b.dataset.recuser,b.dataset.recname)));
     box.querySelectorAll("[data-deluser]").forEach(b=>b.addEventListener("click",async()=>{
       if(!confirm(b.dataset.delname+"さんを一覧から削除しますか？\n（辞めた人の整理用です。本人がまたアプリで売上を入力すると再表示されます）")) return;
       b.disabled=true; b.textContent="削除中…";
       await deleteServerUser(b.dataset.deluser);
       toast(b.dataset.delname+"さんを削除しました");
-      renderAdminServer();
+      renderAdminServer(adminCodeCur);
     }));
   }catch(e){
     box.innerHTML='<p class="note-s" style="color:var(--err)">サーバーに接続できませんでした（電波・URL設定を確認）</p>';
@@ -1549,10 +1617,51 @@ async function deleteServerUser(uid){
   try{
     await fetch(SYNC_URL,{method:"POST",headers:{"Content-Type":"text/plain"},
       body:JSON.stringify({action:"sync",uid,name:"（削除済み）",recCount:0,state:{deleted:true,setupDone:false}})});
+    recServerDelete(uid,"*");   // サーバー上の領収書も全削除
   }catch(e){ toast("削除に失敗しました（電波を確認）"); }
 }
+async function openRecGallery(uid,uname){
+  const gal=$("#recGal");
+  $("#rgTitle").textContent=uname+" さんの領収書";
+  $("#rgList").innerHTML='<p class="note-s">サーバーから読み込み中…</p>';
+  gal.classList.add("on");
+  try{
+    const res=await fetch(SYNC_URL,{method:"POST",headers:{"Content-Type":"text/plain"},
+      body:JSON.stringify({action:"recList",code:adminCodeCur,uid})});
+    const j=await res.json();
+    if(!j.ok){ $("#rgList").innerHTML='<p class="note-s" style="color:var(--err)">サーバーエラー：'+escAttr(j.err)+'（サーバー側コードの更新、または管理者コードの再設定が必要かもしれません）</p>'; return; }
+    const list=(j.receipts||[]).sort((a,b)=>(b.ts||0)-(a.ts||0));
+    if(!list.length){ $("#rgList").innerHTML='<p class="note-s">サーバーに届いている領収書はまだありません。本人がオンラインでアプリを開くと自動でアップロードされます。</p>'; return; }
+    $("#rgList").innerHTML=list.map(r=>
+      '<div class="rgitem"><span class="rgi">'+escAttr(r.kind||"その他")+'<small>'+escAttr(r.ym||"")+(r.memo?'／'+escAttr(r.memo):'')+'</small></span>'+
+      '<button type="button" class="gobtn" data-rgshow="'+escAttr(r.rid)+'">表示</button>'+
+      '<button type="button" class="rgdel" data-rgdel="'+escAttr(r.rid)+'" aria-label="削除">🗑</button></div>').join("");
+    $("#rgList").querySelectorAll("[data-rgshow]").forEach(b=>b.addEventListener("click",async()=>{
+      b.disabled=true; b.textContent="…";
+      try{
+        const r2=await fetch(SYNC_URL,{method:"POST",headers:{"Content-Type":"text/plain"},
+          body:JSON.stringify({action:"recImage",code:adminCodeCur,uid,rid:b.dataset.rgshow})});
+        const j2=await r2.json();
+        if(j2.ok){ $("#imgViewImg").src=j2.data; $("#imgView").classList.add("on"); }
+        else{ toast("画像を取得できませんでした："+j2.err); }
+      }catch(e){ toast("画像を取得できませんでした（電波を確認）"); }
+      b.disabled=false; b.textContent="表示";
+    }));
+    $("#rgList").querySelectorAll("[data-rgdel]").forEach(b=>b.addEventListener("click",async()=>{
+      if(!confirm("この領収書をサーバーから削除しますか？（本人の端末内の画像は消えません）")) return;
+      b.disabled=true;
+      try{
+        await fetch(SYNC_URL,{method:"POST",headers:{"Content-Type":"text/plain"},
+          body:JSON.stringify({action:"recDelete",uid,rid:b.dataset.rgdel})});
+        toast("サーバーから削除しました");
+      }catch(e){ toast("削除に失敗しました（電波を確認）"); }
+      openRecGallery(uid,uname);
+    }));
+  }catch(e){ $("#rgList").innerHTML='<p class="note-s" style="color:var(--err)">サーバーに接続できませんでした（電波を確認）</p>'; }
+}
 async function renderAdmin(code){
-  renderAdminServer(code);
+  adminCodeCur=code||"";
+  renderAdminServer(adminCodeCur);
   const all=await idbAll();
   const rows=[]; let sumOc=0,sumOs=0,sumMiss=0;
   for(const u of users){
@@ -1570,9 +1679,9 @@ async function renderAdmin(code){
             :'<div class="dcard ok"><span class="dt">売上の未入力</span><span class="dv">なし</span><span class="ds">全員入力済み</span></div>');
   const typeLabel={shinsotsu:"新卒・学生から",taishoku:"会社を辞めて",fukugyo:"副業"};
   $("#adminList").innerHTML = rows.length ? rows.map(({u,st,mt,rc})=>{
-    const head='<div class="ahead"><span class="av" style="background:'+avColor(u.name)+'">'+u.name.slice(0,1)+'</span>'+
-      '<span class="aname">'+u.name+(u.pin?" 🔒":"")+'<small>'+(st.setupDone?(typeLabel[st.type]+'／開始 '+st.startYM.replace("-","年")+'月'):'初期設定が未完了')+'</small></span>'+
-      '<button type="button" class="gobtn" data-open="'+u.id+'">この人の画面を開く</button></div>';
+    const head='<div class="ahead"><span class="av" style="background:'+avColor(u.name)+'">'+escAttr(u.name.slice(0,1))+'</span>'+
+      '<span class="aname">'+escAttr(u.name)+(u.pin?" 🔒":"")+'<small>'+escAttr(st.setupDone?(typeLabel[st.type]+'／開始 '+st.startYM.replace("-","年")+'月'):'初期設定が未完了')+'</small></span>'+
+      '<button type="button" class="gobtn" data-open="'+escAttr(u.id)+'">この人の画面を開く</button></div>';
     if(!mt) return '<div class="aucard">'+head+'</div>';
     return '<div class="aucard">'+head+'<div class="agrid">'+
       '<div><span>今年の売上</span><b>'+yen(mt.rev)+'</b></div>'+
@@ -1625,13 +1734,20 @@ function bind(){
       $("#adminPassErr").hidden=false; $("#adminPass").value=""; $("#adminPass").focus(); return;
     }
     $("#adminPassErr").hidden=true; $("#adminPass").value=""; $("#adminPassForm").hidden=true;
-    renderAdmin(SERVER_ADMIN_CODE).then(()=>show("scr-admin"));
+    renderAdmin(localStorage.getItem(APKEY)).then(()=>show("scr-admin"));
   });
   $("#adminPass").addEventListener("keydown",e=>{ if(e.key==="Enter") $("#btnAdminGo").click(); });
   $("#btnAdminBack").addEventListener("click",()=>{ renderLogin(); show("scr-login"); });
   $("#btnAdminPinChange").addEventListener("click",()=>{
     const v=prompt("新しい管理者コード（4〜8文字）を入力");
-    if(v && v.trim().length>=4){ localStorage.setItem(APKEY,v.trim()); toast("管理者コードを変更しました"); }
+    if(v && v.trim().length>=4){
+      const old=adminCodeCur||localStorage.getItem(APKEY)||"";
+      localStorage.setItem(APKEY,v.trim());
+      adminCodeCur=v.trim();
+      if(SYNC_URL) fetch(SYNC_URL,{method:"POST",headers:{"Content-Type":"text/plain"},
+        body:JSON.stringify({action:"adminOps",code:old,op:"setAdmin",newCode:v.trim()})}).catch(()=>{});
+      toast("管理者コードを変更しました");
+    }
   });
 
   document.querySelectorAll("#segType button").forEach(b=>{
@@ -1671,6 +1787,7 @@ function bind(){
     localStorage.removeItem(DKEY(me.id));
     localStorage.removeItem(RKEY(me.id));
     for(const r of recCache){ if(!r._ls) await idbDel(r.id); }
+    recServerDelete(me.id,"*");
     users=users.filter(u=>u.id!==me.id); saveUsers();
     logout();
   });
@@ -1682,6 +1799,8 @@ function bind(){
   $("#recFile").addEventListener("change",e=>{ onRecFiles([...e.target.files]); e.target.value=""; });
   $("#imgViewClose").addEventListener("click",()=>$("#imgView").classList.remove("on"));
   $("#imgView").addEventListener("click",e=>{ if(e.target.id==="imgView") $("#imgView").classList.remove("on"); });
+  $("#rgClose").addEventListener("click",()=>$("#recGal").classList.remove("on"));
+  $("#recGal").addEventListener("click",e=>{ if(e.target.id==="recGal") $("#recGal").classList.remove("on"); });
 
   initBot();
 }

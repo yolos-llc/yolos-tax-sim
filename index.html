@@ -832,7 +832,7 @@ function loadState(id){
 function save(){ if(me){ localStorage.setItem(DKEY(me.id), JSON.stringify(state)); scheduleSync(); } }
 
 /* ---------- サーバー同期（Google Apps Script） ---------- */
-const SYNC_URL="";   // ←サーバーのウェブアプリURL（…/exec）を設定すると同期ON。空なら端末内のみ
+const SYNC_URL="https://script.google.com/macros/s/AKfycbwW-4tRDWP8vM_Edzilq8J0ECEVeXR2rQTP2WtXlyB2UQEGJU7ejNvrMviStnI7eOua/exec";   // サーバー同期ON
 let syncTimer=null;
 function scheduleSync(){
   if(!SYNC_URL||!me||!state||!state.setupDone) return;

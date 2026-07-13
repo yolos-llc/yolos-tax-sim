@@ -360,7 +360,7 @@ footer .wrap{font-size:12px;color:var(--ink-3);line-height:1.8}
   <section class="card">
     <div class="login-hero">
       <p class="big">あなたは誰ですか？</p>
-      <p class="note">自分の名前をタップしてください。データは人ごとに、この端末の中だけに保存されます。</p>
+      <p class="note">自分の名前をタップしてください。データは人ごとに保存され、会社の管理サーバーにも自動同期されます（領収書の画像は端末内のみ）。</p>
     </div>
     <div class="userlist" id="userlist"></div>
     <div class="btnrow"><button type="button" class="btn primary wide" id="btnNewUser">＋ 新しく始める（はじめての人）</button></div>
@@ -394,8 +394,11 @@ footer .wrap{font-size:12px;color:var(--ink-3);line-height:1.8}
 <main class="wrap scr" id="scr-admin">
   <section class="card">
     <h2><span class="step">👑</span>管理者ダッシュボード</h2>
-    <p class="note-s">この端末に登録されているユーザーの状況一覧です。データは各メンバーの端末内に保存されるため、<b>別の端末で使っている人はここに表示されません</b>（全員分をネット越しに見るにはサーバー版が必要です）。</p>
-    <div class="dgrid" id="adminSummary" style="margin:16px 0"></div>
+    <p class="note-s">全メンバーの状況一覧です。「サーバー」には各メンバーの端末から自動同期されたデータが表示されます（アプリで入力するたびに更新）。</p>
+    <h3 style="margin-top:8px">🌐 サーバー（全端末のメンバー）</h3>
+    <div id="adminServer"><p class="note-s">読み込み中…</p></div>
+    <h3>この端末に登録されている人</h3>
+    <div class="dgrid" id="adminSummary" style="margin:12px 0"></div>
     <div id="adminList"></div>
     <div class="btnrow">
       <button type="button" class="btn" id="btnAdminBack">ログイン画面にもどる</button>
@@ -482,7 +485,7 @@ footer .wrap{font-size:12px;color:var(--ink-3);line-height:1.8}
       <button type="button" class="btn danger" id="btnReset">データをリセット</button>
       <button type="button" class="btn danger" id="btnDeleteUser">このユーザーを削除</button>
     </div>
-    <p class="note-s" style="margin-top:8px">入力・領収書はこの端末に自動保存されます（外部には送信されません）。</p>
+    <p class="note-s" style="margin-top:8px">入力・領収書はこの端末に自動保存されます。売上などの入力データは会社の管理サーバーにも自動同期されます（領収書の画像は端末内のみ）。</p>
   </section>
 </main>
 
@@ -826,7 +829,28 @@ function loadState(id){
   try{ const j=JSON.parse(localStorage.getItem(DKEY(id))||"null"); if(j) s=Object.assign(s,j); }catch(e){}
   return s;
 }
-function save(){ if(me) localStorage.setItem(DKEY(me.id), JSON.stringify(state)); }
+function save(){ if(me){ localStorage.setItem(DKEY(me.id), JSON.stringify(state)); scheduleSync(); } }
+
+/* ---------- サーバー同期（Google Apps Script） ---------- */
+const SYNC_URL="";   // ←サーバーのウェブアプリURL（…/exec）を設定すると同期ON。空なら端末内のみ
+let syncTimer=null;
+function scheduleSync(){
+  if(!SYNC_URL||!me||!state||!state.setupDone) return;
+  clearTimeout(syncTimer);
+  syncTimer=setTimeout(doSync, 2500);           // 入力が落ち着いてから送る
+}
+async function doSync(){
+  if(!SYNC_URL||!me||!state) return;
+  try{
+    await fetch(SYNC_URL,{method:"POST",headers:{"Content-Type":"text/plain"},
+      body:JSON.stringify({action:"sync",uid:me.id,name:me.name,recCount:recCache.length,state})});
+  }catch(e){ /* オフライン時は次の保存時に再送 */ }
+}
+async function fetchServerUsers(code){
+  const res=await fetch(SYNC_URL,{method:"POST",headers:{"Content-Type":"text/plain"},
+    body:JSON.stringify({action:"adminAll",code})});
+  return res.json();
+}
 function migrateLegacy(){
   try{
     const old=localStorage.getItem("yolos-tax-sim-v1");
@@ -1309,9 +1333,9 @@ const KB=[
   {k:["期限切れ","おそい","遅れてる","赤い","オレンジ"], a:"「⚠期限切れ」は納付期限の日付が過ぎている未払いです。気づいたら早めに払えばほぼ大ごとになりません（少額の延滞金で済みます）。払ったら「支払った」を押して消してください。"},
   {k:["支払った 間違え","戻す","取り消し","誤って"], a:"「支払った」を押した直後なら、画面下に出る黒い通知の「元に戻す」で戻せます。あとからまとめて戻す場合は、やることリスト下部の「すべて元に戻す」を使ってください。"},
   {k:["領収書","レシート","アップロード","写真","画像"], a:"「領収書ボックス」の📷ボタンから追加できます（スマホならその場で撮影OK・複数枚可）。種類・年月・メモをつけて保存され、確定申告のときにここを見返すだけで済みます。画像はこの端末の中だけに保存されます。"},
-  {k:["機種変更","データ 消え","引き継ぎ","別の端末","バックアップ"], a:"データ（入力・領収書）はこの端末のブラウザの中だけに保存されていて、別の端末には自動で引き継がれません。機種変更の前に、領収書は端末の写真アプリにも残しておく＋売上はメモしておくのが安全です。会計ソフトに毎月転記しておけば、このアプリのデータが消えても困りません。"},
-  {k:["ログイン","ログアウト","ユーザー","パスワード","ロック","pin","自動"], a:"一度ログインすれば、この端末では次から自動ログインになります（右上の「ログアウト」を押すまで維持）。ロック番号（4桁）は⚙設定のアカウント欄で変更・解除できます。データは人ごとに端末内保存で、外部には送信されません。"},
-  {k:["管理者","管理画面","全員","一括"], a:"管理者は、ログイン画面のいちばん下「管理者の方はこちら」から管理者コードでダッシュボードに入れます（初回にコードを設定）。この端末に登録された全ユーザーの売上見込み・税額・期限切れ・未入力・領収書枚数が一覧できます。※各メンバーの端末のデータは見えません（端末内保存のため）。"},
+  {k:["機種変更","データ 消え","引き継ぎ","別の端末","バックアップ"], a:"売上などの入力データは会社の管理サーバーに自動同期されているので、消えても管理者が確認できます（新端末への自動復元はまだ未対応なので、機種変更したら初期設定をやり直して売上を入れ直してください）。領収書の画像だけは端末内のみの保存なので、機種変更前に端末の写真アプリにも残しておくと安全です。"},
+  {k:["ログイン","ログアウト","ユーザー","パスワード","ロック","pin","自動"], a:"一度ログインすれば、この端末では次から自動ログインになります（右上の「ログアウト」を押すまで維持）。ロック番号（4桁）は⚙設定のアカウント欄で変更・解除できます。入力データは端末に保存され、管理用に会社のサーバーへも自動同期されます（領収書の画像は端末内のみ）。"},
+  {k:["管理者","管理画面","全員","一括","サーバー"], a:"管理者は、ログイン画面のいちばん下「管理者の方はこちら」から管理者コードでダッシュボードに入れます（初回にコードを設定）。サーバーに同期された全メンバーの売上見込み・税額・期限切れ・未入力・領収書枚数と最終同期日を、どの端末からでも一覧できます。"},
   {k:["設定 変え","条件 変え","開始月 変え","青色 変え"], a:"右上の⚙設定から、働き方・開始月・売上見込み・経費・青色申告・年齢をいつでも変えられます。保存すると全部の金額が計算し直されます。"},
   // ===== 開業・届出 =====
   {k:["開業届","開業とどけ","かいぎょう","届出"], a:"開業届は「個人で仕事を始めました」という税務署へのお知らせの紙です。開業から1ヶ月以内が原則ですが、過ぎていても罰則はないので気づいた今出せばOK。書き方は配布の「届出完全ガイド」に全欄の記入例があります。e-Taxならスマホで出せます。"},
@@ -1431,7 +1455,54 @@ function adminMetrics(st){
   const ys=r.yearSummary.find(x=>x.y===cy)||{rev:0,it:0};
   return {oc,os,miss,rev:ys.rev,it:ys.it,setAside:r.setAside};
 }
-async function renderAdmin(){
+function aucardHTML(name, pin, sub, mt, rc){
+  const head='<div class="ahead"><span class="av" style="background:'+avColor(name)+'">'+name.slice(0,1)+'</span>'+
+    '<span class="aname">'+name+(pin?" 🔒":"")+'<small>'+sub+'</small></span></div>';
+  if(!mt) return '<div class="aucard">'+head+'</div>';
+  return '<div class="aucard">'+head+'<div class="agrid">'+
+    '<div><span>今年の売上</span><b>'+yen(mt.rev)+'</b></div>'+
+    '<div><span>所得税見込み</span><b>約'+yen(mt.it)+'</b></div>'+
+    '<div><span>よけておく額</span><b>'+yen(mt.setAside)+'／月</b></div>'+
+    '<div><span>⚠ 期限切れ</span>'+(mt.oc?'<b class="warn">'+mt.oc+'件 '+yen(mt.os)+'</b>':'<b class="okc">なし</b>')+'</div>'+
+    '<div><span>売上の未入力</span>'+(mt.miss?'<b class="warn">'+mt.miss+'ヶ月</b>':'<b class="okc">なし</b>')+'</div>'+
+    '<div><span>領収書</span><b>'+rc+'枚</b></div>'+
+    '</div></div>';
+}
+async function renderAdminServer(code){
+  const box=$("#adminServer");
+  if(!SYNC_URL){ box.innerHTML='<p class="note-s">サーバー同期は未設定です（設定するとメンバー全員の端末のデータをここで一覧できます）。</p>'; return; }
+  box.innerHTML='<p class="note-s">サーバーから読み込み中…</p>';
+  try{
+    const r=await fetchServerUsers(code);
+    if(!r.ok){
+      box.innerHTML='<p class="note-s" style="color:var(--err)">'+(r.err==="wrong code"?"サーバーの管理者コードと一致しません（最初にサーバーへアクセスしたときのコードが登録されています）":"サーバーエラー："+r.err)+'</p>';
+      return;
+    }
+    if(!r.users.length){ box.innerHTML='<p class="note-s">まだ誰も同期されていません。各メンバーがアプリを開いて入力すると自動で届きます。</p>'; return; }
+    const typeLabel={shinsotsu:"新卒・学生から",taishoku:"会社を辞めて",fukugyo:"副業"};
+    let oc=0, os=0, miss=0;
+    const cards=r.users.map(u=>{
+      const mt=(u.state&&u.state.setupDone)?adminMetrics(u.state):null;
+      if(mt){ oc+=mt.oc; os+=mt.os; miss+=mt.miss; }
+      const upd=u.updatedAt?new Date(u.updatedAt):null;
+      const sub=((u.state&&u.state.setupDone)?(typeLabel[u.state.type]+'／開始 '+u.state.startYM.replace("-","年")+'月／'):'初期設定が未完了／')+
+        '最終同期 '+(upd?((upd.getMonth()+1)+'/'+upd.getDate()):'-');
+      return aucardHTML(u.name||"?", false, sub, mt, u.recCount||0);
+    }).join("");
+    box.innerHTML=
+      '<div class="dgrid" style="margin-bottom:12px">'+
+      '<div class="dcard"><span class="dt">同期済みメンバー</span><span class="dv">'+r.users.length+'人</span><span class="ds">全端末</span></div>'+
+      (oc?'<div class="dcard alert"><span class="dt">⚠ 期限切れ合計</span><span class="dv">'+yen(os)+'</span><span class="ds">'+oc+'件（全員分）</span></div>'
+         :'<div class="dcard ok"><span class="dt">期限切れ合計</span><span class="dv">なし</span><span class="ds">全員処理済み</span></div>')+
+      (miss?'<div class="dcard alert"><span class="dt">売上の未入力</span><span class="dv">'+miss+'ヶ月分</span><span class="ds">全員合計</span></div>'
+           :'<div class="dcard ok"><span class="dt">売上の未入力</span><span class="dv">なし</span><span class="ds">全員入力済み</span></div>')+
+      '</div>'+cards;
+  }catch(e){
+    box.innerHTML='<p class="note-s" style="color:var(--err)">サーバーに接続できませんでした（電波・URL設定を確認）</p>';
+  }
+}
+async function renderAdmin(code){
+  renderAdminServer(code);
   const all=await idbAll();
   const rows=[]; let sumOc=0,sumOs=0,sumMiss=0;
   for(const u of users){
@@ -1503,8 +1574,9 @@ function bind(){
     }else if(v!==saved){
       $("#adminPassErr").hidden=false; $("#adminPass").value=""; $("#adminPass").focus(); return;
     }
+    const codeUsed = saved || v;
     $("#adminPassErr").hidden=true; $("#adminPass").value=""; $("#adminPassForm").hidden=true;
-    renderAdmin().then(()=>show("scr-admin"));
+    renderAdmin(codeUsed).then(()=>show("scr-admin"));
   });
   $("#adminPass").addEventListener("keydown",e=>{ if(e.key==="Enter") $("#btnAdminGo").click(); });
   $("#btnAdminBack").addEventListener("click",()=>{ renderLogin(); show("scr-login"); });

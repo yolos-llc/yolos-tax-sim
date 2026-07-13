@@ -1605,7 +1605,13 @@ async function renderAdminServer(code){
     try{ r=await fetchServerUsers(adminCodeCur); }
     catch(e1){ await new Promise(res=>setTimeout(res,1500)); r=await fetchServerUsers(adminCodeCur); }   // 一時的な接続エラーは1回だけ自動再試行
     if(!r.ok){
-      box.innerHTML='<p class="note-s" style="color:var(--err)">サーバーエラー：'+escAttr(r.err)+'</p>';
+      const msg = r.err==="wrong code"
+        ? "サーバーには別の管理者コードが登録されています。以前に設定したコードで入り直してください。<br>どうしても分からない場合は、サーバー側コードのリセットが必要です（担当者へ連絡）。"
+        : (r.err==="code required" ? "管理者コードは4文字以上で設定してください。" : "サーバーエラー："+escAttr(r.err));
+      box.innerHTML='<p class="note-s" style="color:var(--err)">'+msg+'</p>'+
+        '<button type="button" class="btn" id="btnAdminRetry2" style="min-height:40px">再読み込み</button>';
+      const rb2=document.getElementById("btnAdminRetry2");
+      if(rb2) rb2.addEventListener("click",()=>renderAdminServer(adminCodeCur));
       return;
     }
     r.users=(r.users||[]).filter(u=>HIDDEN_UIDS.indexOf(u.uid)<0 && !(u.state&&u.state.deleted));

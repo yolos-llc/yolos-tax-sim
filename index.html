@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1F3864">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>税金・保険料シミュレーター｜業務委託メンバー用</title>
+<style>
+:root{
+  --navy:#1F3864; --navy-2:#2B4A80; --orange:#E0792C; --orange-2:#C2661F; --gold:#E8B24A;
+  --ink:#1F2937; --ink-2:#4B5563; --ink-3:#8A94A6; --line:#E5E7EB; --bg:#F6F7FA; --card:#FFFFFF;
+  --ok:#1B8A5A; --okbg:#E4F3EC; --err:#B3402F; --errbg:#FBE9E7; --warn-bg:#FDF3E7; --warn-bd:#F3D9BC;
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s6:48px;
+  --r1:8px; --r2:16px;
+  --shadow:0 1px 3px rgba(16,24,40,.08),0 1px 2px rgba(16,24,40,.04);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{
+  font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif;
+  color:var(--ink); background:var(--bg); font-size:16px; line-height:1.75;
+  padding-bottom:88px;
+}
+.wrap{max-width:760px;margin:0 auto;padding:0 var(--s2)}
+
+/* ヘッダー */
+header{background:var(--navy);color:#fff;padding:var(--s3) 0}
+header .wrap{display:flex;flex-direction:column;gap:4px}
+.brand{font-size:12px;letter-spacing:.08em;color:var(--gold);font-weight:700}
+h1{font-size:22px;line-height:1.4;letter-spacing:.02em}
+.lead{font-size:13px;color:#C9D4E8}
+.userbar{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+.uchip{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border-radius:999px;padding:4px 14px 4px 6px;font-size:13px;font-weight:700}
+.uchip .av{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff}
+.hbtn{min-height:36px;padding:0 14px;border-radius:999px;border:1px solid rgba(255,255,255,.4);background:none;color:#fff;font-size:12px;font-weight:700;cursor:pointer}
+.hbtn:hover{background:rgba(255,255,255,.12)}
+.hbtn:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+
+/* 画面切替 */
+.scr{display:none}
+.scr.on{display:block}
+main.wrap{padding-top:var(--s4)}
+@media(min-width:768px){main.wrap{padding-top:var(--s6)}}
+.dash{margin-top:var(--s1)}
+section{margin-bottom:var(--s3)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r2);box-shadow:var(--shadow);padding:var(--s3)}
+h2{font-size:17px;line-height:1.4;letter-spacing:.02em;margin-bottom:var(--s2);display:flex;align-items:center;gap:10px}
+h2 .step{flex:none;width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center}
+h3{font-size:16px;margin:var(--s3) 0 var(--s1)}
+.note{font-size:13px;color:var(--ink-2)}
+.note-s{font-size:12px;color:var(--ink-3)}
+
+/* フォーム */
+.field{margin-bottom:var(--s2)}
+.field:last-child{margin-bottom:0}
+label.flabel{display:block;font-size:14px;font-weight:700;margin-bottom:6px}
+label.flabel .opt{font-weight:400;color:var(--ink-3);font-size:12px;margin-left:6px}
+input[type="month"],input[type="number"],input[type="text"],input[type="password"],select{
+  width:100%;height:48px;font-size:16px;padding:0 14px;color:var(--ink);
+  border:1px solid #CBD2DC;border-radius:var(--r1);background:#fff;
+}
+input:focus-visible,select:focus-visible{outline:2px solid var(--navy-2);outline-offset:1px;border-color:var(--navy-2)}
+.hint{font-size:12px;color:var(--ink-3);margin-top:4px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2)}
+@media(max-width:479px){.grid2{grid-template-columns:1fr}}
+.unit-input{position:relative}
+.unit-input input{padding-right:56px}
+.unit-input .unit{position:absolute;right:14px;top:0;height:48px;display:flex;align-items:center;font-size:14px;color:var(--ink-3);pointer-events:none}
+
+/* タイプ選択 */
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.seg button{
+  min-height:56px;padding:8px 4px;border:1.5px solid #CBD2DC;border-radius:var(--r1);background:#fff;
+  font-size:14px;font-weight:700;color:var(--ink-2);cursor:pointer;line-height:1.35;
+  transition:background .15s ease-out,border-color .15s ease-out;
+}
+.seg button .sub{display:block;font-size:11px;font-weight:400;color:var(--ink-3)}
+.seg button:hover{border-color:var(--navy-2)}
+.seg button:focus-visible{outline:2px solid var(--navy-2);outline-offset:1px}
+.seg button.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.seg button.on .sub{color:#C9D4E8}
+.seg.v{grid-template-columns:1fr}
+.seg.v button{min-height:64px;text-align:left;padding:10px 16px}
+
+/* チェック行 */
+.checkrow{display:flex;align-items:flex-start;gap:10px;padding:10px 0}
+.checkrow input{width:22px;height:22px;margin-top:4px;accent-color:var(--navy);cursor:pointer;flex:none}
+.checkrow label{cursor:pointer;font-size:14px}
+
+/* ボタン */
+.btnrow{display:flex;gap:10px;margin-top:var(--s2);flex-wrap:wrap}
+.btn{
+  min-height:48px;padding:0 18px;border-radius:var(--r1);font-size:14px;font-weight:700;cursor:pointer;
+  border:1.5px solid #CBD2DC;background:#fff;color:var(--ink-2);transition:background .15s ease-out;
+}
+.btn:hover{background:var(--bg)}
+.btn:focus-visible{outline:2px solid var(--navy-2);outline-offset:1px}
+.btn.primary{background:var(--orange);border-color:var(--orange);color:#fff}
+.btn.primary:hover{background:var(--orange-2)}
+.btn.danger{border-color:var(--err);color:var(--err)}
+.btn.danger:hover{background:var(--errbg)}
+.btn.wide{width:100%}
+
+/* ログイン画面 */
+.login-hero{text-align:center;padding:var(--s3) 0 var(--s2)}
+.login-hero .big{font-size:20px;font-weight:700;color:var(--navy)}
+.userlist{display:flex;flex-direction:column;gap:10px;margin-top:var(--s2)}
+.ucardw{border:1.5px solid #CBD2DC;border-radius:var(--r2);background:#fff;overflow:hidden}
+.ubtn{display:flex;align-items:center;gap:12px;width:100%;min-height:68px;padding:10px 16px;border:none;background:none;font-size:16px;font-weight:700;color:var(--ink);cursor:pointer;text-align:left;font-family:inherit}
+.ubtn:hover{background:var(--bg)}
+.ubtn:focus-visible{outline:2px solid var(--navy-2);outline-offset:-2px}
+.ubtn .av{flex:none;width:44px;height:44px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-size:19px}
+.ubtn .uinfo small{display:block;font-size:11px;color:var(--ink-3);font-weight:400}
+.ubtn .lock{margin-left:auto;font-size:12px;color:var(--ink-3);font-weight:400;flex:none}
+.pinrow{display:flex;gap:8px;padding:0 16px 14px;align-items:center}
+.pinrow input{max-width:150px;text-align:center;letter-spacing:8px;font-size:20px}
+.pinrow .perr{font-size:12px;color:var(--err);font-weight:700}
+
+/* ウィザード */
+.wiz-progress{display:flex;gap:6px;margin-bottom:var(--s3)}
+.wiz-progress i{flex:1;height:6px;border-radius:3px;background:var(--line)}
+.wiz-progress i.onp{background:var(--orange)}
+.wiz-q{font-size:20px;font-weight:700;line-height:1.5;margin-bottom:6px}
+.wiz-d{font-size:13px;color:var(--ink-2);margin-bottom:var(--s2)}
+.wiz-sum{background:var(--bg);border-radius:var(--r1);padding:14px 16px;font-size:14px;margin-bottom:var(--s2)}
+.wiz-sum li{list-style:none;display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed var(--line)}
+.wiz-sum li:last-child{border-bottom:none}
+
+/* 月グリッド */
+details.mgrid{border:1px solid var(--line);border-radius:var(--r1);margin-top:var(--s1);background:#fff}
+details.mgrid summary{
+  list-style:none;cursor:pointer;padding:12px 14px;font-size:14px;font-weight:700;color:var(--navy);
+  display:flex;justify-content:space-between;align-items:center;min-height:44px;gap:8px;
+}
+details.mgrid summary::after{content:"＋";color:var(--ink-3);flex:none}
+details.mgrid[open] summary::after{content:"－"}
+details.mgrid summary:hover{background:var(--bg)}
+.mgrid-inner{padding:0 14px 14px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:600px){.mgrid-inner{grid-template-columns:repeat(3,1fr)}}
+.mcell label{display:block;font-size:12px;color:var(--ink-2);margin-bottom:2px}
+.mcell input{height:44px}
+.mcell input.isPast{border-color:var(--gold);background:#FFFCF4}
+.mcell.flash input{outline:3px solid var(--orange);outline-offset:1px}
+.mb{display:inline-block;font-size:10px;line-height:1.6;border-radius:999px;padding:0 7px;background:var(--line);color:var(--ink-2);margin-left:4px;vertical-align:1px}
+.mb-now{background:var(--navy);color:#fff}
+.mb-ok{background:var(--okbg);color:var(--ok)}
+.mb-miss{background:var(--errbg);color:var(--err)}
+
+/* ダッシュボード */
+.dash{margin-bottom:var(--s3)}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(min-width:768px){.dgrid{grid-template-columns:repeat(4,1fr)}}
+.dcard{display:block;background:var(--card);border:1px solid var(--line);border-radius:var(--r2);box-shadow:var(--shadow);padding:14px 16px;text-decoration:none;color:var(--ink)}
+.dcard .dt{display:block;font-size:12px;color:var(--ink-2);line-height:1.5}
+.dcard .dv{display:block;font-size:20px;font-weight:700;color:var(--navy);line-height:1.5;white-space:nowrap}
+.dcard .ds{display:block;font-size:11px;color:var(--ink-3)}
+.dcard.alert{border:1.5px solid var(--orange);background:var(--warn-bg)}
+.dcard.alert .dv{color:var(--orange-2)}
+.dcard.ok .dv{color:var(--ok)}
+a.dcard:hover{border-color:var(--navy-2)}
+a.dcard:focus-visible{outline:2px solid var(--navy-2);outline-offset:1px}
+
+/* ヒーロー */
+.hero{background:var(--navy);color:#fff;border-radius:var(--r2);padding:var(--s3);text-align:center}
+.hero .t{font-size:14px;color:#C9D4E8}
+.hero .big{font-size:40px;font-weight:700;line-height:1.3;color:#fff;margin:2px 0}
+.hero .big small{font-size:18px;font-weight:700}
+.hero .pct{display:inline-block;background:var(--orange);color:#fff;border-radius:999px;font-size:13px;font-weight:700;padding:4px 14px;margin-top:6px}
+.hero .free{font-size:13px;color:#E6ECF7;margin-top:10px;background:rgba(255,255,255,.08);border-radius:8px;padding:8px 12px;display:inline-block}
+.hero .free b{color:var(--gold);font-size:16px}
+.hero .d{font-size:12px;color:#AFC0DC;margin-top:10px}
+
+/* いまの見込み */
+.nowcard{margin-top:var(--s2)}
+.nowcard h3{margin:0 0 8px;font-size:15px;color:var(--navy)}
+.nowline{display:flex;justify-content:space-between;gap:8px;font-size:14px;padding:8px 0;border-bottom:1px dashed var(--line)}
+.nowline:last-child{border-bottom:none}
+.nowline .nl{color:var(--ink-2)}
+.nowline .nl small{display:block;font-size:12px;color:var(--ink-3)}
+.nowline .nv{font-weight:700;color:var(--navy);white-space:nowrap}
+.nextpay{background:#EEF2F9;border-radius:var(--r1);padding:10px 14px;margin-top:10px;font-size:13px}
+.nextpay b{color:var(--orange-2)}
+
+/* 年カード */
+.years{display:grid;grid-template-columns:1fr;gap:var(--s2);margin-top:var(--s2)}
+@media(min-width:768px){.years{grid-template-columns:repeat(3,1fr)}}
+.ycard{background:var(--card);border:1px solid var(--line);border-radius:var(--r2);box-shadow:var(--shadow);padding:var(--s2)}
+.ycard .yt{font-size:13px;font-weight:700;color:var(--ink-2)}
+.ycard .ysum{font-size:24px;font-weight:700;color:var(--navy);line-height:1.4}
+.ycard .ysum small{font-size:13px;font-weight:400;color:var(--ink-3)}
+.bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--line);margin:8px 0 10px}
+.bar i{display:block;height:100%}
+.legend{font-size:12px;color:var(--ink-2)}
+.legend li{display:flex;justify-content:space-between;align-items:center;list-style:none;padding:3px 0;border-bottom:1px dashed var(--line)}
+.legend li:last-child{border-bottom:none}
+.legend .lb{display:flex;align-items:center;gap:6px}
+.legend .sw{width:10px;height:10px;border-radius:3px;flex:none}
+.c-sho{background:#2B4A80}.c-ju{background:#5B79AE}.c-ko{background:#E0792C}.c-ne{background:#E8B24A}.c-ji{background:#9CA3AF}
+
+/* やることタスク */
+.taskbox{background:var(--card);border:1px solid var(--line);border-radius:var(--r2);box-shadow:var(--shadow);padding:var(--s2)}
+.taskbox h2{margin-bottom:4px}
+.taskbox .note-s{margin-bottom:10px}
+.task{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:var(--r1);padding:10px 12px;margin-bottom:8px}
+.task.late{border:1.5px solid var(--orange);background:var(--warn-bg)}
+.task.sales{border:1.5px dashed var(--gold);background:#FFFDF6}
+.task:last-of-type{margin-bottom:0}
+.task .tl{flex:1;font-size:13px;line-height:1.5;min-width:0}
+.task .tl small{display:block;color:var(--ink-3);font-size:11px}
+.task .ta{font-size:14px;font-weight:700;color:var(--ink);white-space:nowrap}
+.task .paybtn{flex:none;min-height:40px;padding:0 12px;border-radius:var(--r1);border:1.5px solid var(--ok);background:#fff;color:var(--ok);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.task .paybtn:hover{background:var(--okbg)}
+.task .paybtn:focus-visible{outline:2px solid var(--ok);outline-offset:1px}
+.task .gobtn{flex:none;min-height:40px;padding:0 12px;border-radius:var(--r1);border:1.5px solid var(--navy-2);background:#fff;color:var(--navy);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.task .gobtn:hover{background:#EEF2F9}
+.tbadge{display:inline-block;font-size:10px;font-weight:700;border-radius:999px;padding:1px 8px;margin-right:6px;vertical-align:1px}
+.tbadge.late{background:var(--orange);color:#fff}
+.tbadge.soon{background:#EEF2F9;color:var(--navy)}
+.tbadge.sales{background:var(--gold);color:#fff}
+.alldone{background:var(--okbg);border:1px solid #BFE3D2;border-radius:var(--r1);padding:12px 14px;font-size:13px;color:var(--ok);font-weight:700}
+.undo{background:none;border:none;font-size:12px;color:var(--ink-3);text-decoration:underline;cursor:pointer;padding:8px 0;min-height:32px;font-family:inherit}
+
+/* スケジュール */
+.ygroup{margin-top:var(--s2)}
+.ygroup .yhead{font-size:14px;font-weight:700;color:#fff;background:var(--navy-2);border-radius:var(--r1);padding:8px 14px;margin-bottom:10px}
+.mrow{background:var(--card);border:1px solid var(--line);border-radius:var(--r1);padding:12px 14px;margin-bottom:8px}
+.mrow.zero{background:transparent;box-shadow:none;border-style:dashed;color:var(--ink-3)}
+.mrow .mhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.mrow .mname{font-size:14px;font-weight:700}
+.mrow.zero .mname{color:var(--ink-3);font-weight:400}
+.mrow .mtotal{font-size:16px;font-weight:700;color:var(--navy);white-space:nowrap}
+.mrow.heavy{border:1.5px solid var(--orange)}
+.badge-heavy{display:inline-block;background:var(--orange);color:#fff;font-size:11px;font-weight:700;border-radius:999px;padding:1px 10px;margin-left:6px;vertical-align:2px}
+.items{margin-top:6px;display:flex;flex-direction:column;gap:4px}
+.item{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--ink-2)}
+.item .due{color:var(--ink-3);font-size:12px;margin-left:6px}
+.item .amt{white-space:nowrap;font-weight:700;color:var(--ink)}
+.item.ev{color:var(--navy);background:#EEF2F9;border-radius:6px;padding:4px 10px;font-weight:700}
+.item .tag{display:inline-block;font-size:11px;color:var(--orange-2);border:1px solid var(--gold);border-radius:999px;padding:0 8px;margin-left:6px}
+
+/* 領収書ボックス */
+.recbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.recadd{position:relative;overflow:hidden}
+.recadd input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.reclist{display:flex;flex-direction:column;gap:10px;margin-top:var(--s2)}
+.rec{display:grid;grid-template-columns:76px 1fr 40px;gap:12px;background:#fff;border:1px solid var(--line);border-radius:var(--r1);padding:12px;align-items:start}
+.rec img{width:76px;height:76px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid var(--line);display:block}
+.rec .rmeta{display:flex;flex-direction:column;gap:8px;min-width:0}
+.rec .rmeta select,.rec .rmeta input{height:42px;font-size:14px;padding:0 10px;width:100%}
+.rec .rdel{background:none;border:none;color:var(--ink-3);font-size:18px;cursor:pointer;min-width:40px;min-height:40px;font-family:inherit;border-radius:var(--r1)}
+.rec .rdel:hover{color:var(--err);background:var(--errbg)}
+@media(min-width:600px){
+  .rec .rmeta{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .rec .rmeta input.rmemo{grid-column:1/3}
+}
+.recempty{font-size:13px;color:var(--ink-3);background:var(--bg);border-radius:var(--r1);padding:14px;text-align:center;margin-top:var(--s2)}
+.imgview{position:fixed;inset:0;background:rgba(10,16,30,.85);z-index:60;display:none;align-items:center;justify-content:center;padding:16px;flex-direction:column;gap:12px}
+.imgview.on{display:flex}
+.imgview img{max-width:100%;max-height:80vh;border-radius:8px;background:#fff}
+.imgview button{min-height:44px;padding:0 24px;border-radius:999px;border:none;background:#fff;font-weight:700;cursor:pointer;font-family:inherit}
+
+/* 注意ボックス */
+.warnbox{background:var(--warn-bg);border:1px solid var(--warn-bd);border-radius:var(--r1);padding:14px 16px;font-size:13px;color:var(--ink-2);margin-top:var(--s2)}
+.warnbox b{color:var(--orange-2)}
+
+/* 質問ボット */
+.fab{
+  position:fixed;right:16px;bottom:76px;z-index:20;min-height:52px;border-radius:999px;
+  background:var(--navy);color:#fff;border:none;font-size:14px;font-weight:700;padding:0 20px;
+  box-shadow:0 4px 12px rgba(16,24,40,.25);cursor:pointer;font-family:inherit;
+}
+.fab:hover{background:var(--navy-2)}
+.fab:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+@media(min-width:768px){.fab{bottom:24px}}
+.botpanel{
+  position:fixed;right:0;bottom:0;left:0;z-index:30;background:#fff;border-radius:16px 16px 0 0;
+  box-shadow:0 -6px 24px rgba(16,24,40,.25);display:none;flex-direction:column;max-height:520px;height:70vh;
+}
+@media(min-width:768px){.botpanel{left:auto;right:24px;bottom:24px;width:400px;border-radius:16px}}
+.botpanel.on{display:flex}
+.bothead{background:var(--navy);color:#fff;padding:12px 16px;border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center;flex:none}
+.bothead .bt{font-size:14px;font-weight:700}
+.bothead .bs{font-size:11px;color:#C9D4E8}
+.botclose{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;min-width:44px;min-height:36px;font-family:inherit}
+.botlog{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:85%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.7}
+.msg.bot{background:var(--bg);border:1px solid var(--line);align-self:flex-start;border-bottom-left-radius:4px;white-space:pre-line}
+.msg.me{background:var(--navy);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 10px;flex:none}
+.chip{border:1px solid var(--navy-2);color:var(--navy);background:#fff;border-radius:999px;font-size:12px;padding:6px 12px;cursor:pointer;min-height:34px;font-family:inherit}
+.chip:hover{background:#EEF2F9}
+.botform{display:flex;gap:8px;padding:10px 14px 14px;border-top:1px solid var(--line);flex:none}
+.botform input{flex:1;height:44px}
+.botform button{flex:none;min-width:64px;border-radius:var(--r1);border:none;background:var(--orange);color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}
+.botform button:hover{background:var(--orange-2)}
+
+/* トースト */
+.toast{
+  position:fixed;left:50%;transform:translateX(-50%);bottom:96px;z-index:50;
+  background:var(--ink);color:#fff;border-radius:999px;padding:10px 18px;font-size:13px;font-weight:700;
+  display:none;align-items:center;gap:12px;box-shadow:0 4px 16px rgba(0,0,0,.3);max-width:92vw;
+}
+.toast.on{display:flex}
+.toast button{background:none;border:none;color:var(--gold);font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;min-height:32px}
+
+/* 固定バー */
+.stickybar{
+  position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);
+  box-shadow:0 -2px 10px rgba(16,24,40,.08);padding:10px 16px;z-index:10;
+}
+.stickybar .in{max-width:760px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.stickybar .l{font-size:12px;color:var(--ink-2);line-height:1.4}
+.stickybar .v{font-size:20px;font-weight:700;color:var(--orange-2);white-space:nowrap}
+@media(min-width:768px){.stickybar{display:none} body{padding-bottom:var(--s4)}}
+
+footer{padding:var(--s4) 0 var(--s6)}
+footer .wrap{font-size:12px;color:var(--ink-3);line-height:1.8}
+
+@media print{
+  body{background:#fff;padding-bottom:0}
+  .stickybar,.btnrow,.fab,.botpanel,.userbar,.toast{display:none}
+  .card,.ycard,.mrow,.taskbox{box-shadow:none}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <span class="brand">YOLOs 営業事業部</span>
+    <h1>税金・保険料シミュレーター</h1>
+    <p class="lead">売上を入れると「いつ・いくら払うか」と「毎月よけておく額」がわかります（金額は概算）</p>
+    <div class="userbar" id="userbar" hidden>
+      <span class="uchip" id="uchip"></span>
+      <button type="button" class="hbtn" id="btnSettings">⚙ 設定</button>
+      <button type="button" class="hbtn" id="btnLogout">ユーザー切替</button>
+    </div>
+  </div>
+</header>
+
+<!-- ================= ログイン ================= -->
+<main class="wrap scr" id="scr-login">
+  <section class="card">
+    <div class="login-hero">
+      <p class="big">あなたは誰ですか？</p>
+      <p class="note">自分の名前をタップしてください。データは人ごとに、この端末の中だけに保存されます。</p>
+    </div>
+    <div class="userlist" id="userlist"></div>
+    <div class="btnrow"><button type="button" class="btn primary wide" id="btnNewUser">＋ 新しく始める（はじめての人）</button></div>
+    <div id="newUserForm" hidden style="margin-top:16px">
+      <div class="field">
+        <label class="flabel" for="nuName">名前（ニックネームでOK）</label>
+        <input type="text" id="nuName" maxlength="20" placeholder="例：小山" autocomplete="off">
+      </div>
+      <div class="field">
+        <label class="flabel" for="nuPin">ロック番号（4桁・任意）<span class="opt">共用端末で見られたくない場合だけ</span></label>
+        <input type="password" id="nuPin" inputmode="numeric" maxlength="4" placeholder="なしでもOK" autocomplete="off">
+      </div>
+      <div class="btnrow">
+        <button type="button" class="btn primary" id="btnCreateUser">この名前で始める</button>
+        <button type="button" class="btn" id="btnCancelNew">キャンセル</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ================= 初期設定ウィザード ================= -->
+<main class="wrap scr" id="scr-wizard">
+  <section class="card">
+    <div class="wiz-progress" id="wizProg"></div>
+    <div id="wizBody"></div>
+  </section>
+</main>
+
+<!-- ================= 設定 ================= -->
+<main class="wrap scr" id="scr-settings">
+  <section class="card">
+    <h2><span class="step">⚙</span>設定（あなたの条件）</h2>
+    <div class="field">
+      <label class="flabel" id="lb-type">働き方はどれ？</label>
+      <div class="seg" role="group" aria-labelledby="lb-type" id="segType">
+        <button type="button" data-type="shinsotsu">新卒・学生から<span class="sub">前年の収入なし</span></button>
+        <button type="button" data-type="taishoku">会社を辞めて<span class="sub">前職の給与あり</span></button>
+        <button type="button" data-type="fukugyo">副業<span class="sub">会社員のまま</span></button>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label class="flabel" for="startYM">開始年月（開業する月）</label>
+        <input type="month" id="startYM" value="2026-04" min="2024-01" max="2032-12">
+      </div>
+      <div class="field" id="f-prevSalary" hidden>
+        <label class="flabel" for="prevSalary">去年1年間の給与収入<span class="opt">総支給（額面）</span></label>
+        <div class="unit-input"><input type="number" id="prevSalary" inputmode="numeric" min="0" max="3000" step="10" value="300"><span class="unit">万円</span></div>
+        <p class="hint">1年目の住民税・国保はこの金額から計算されます</p>
+      </div>
+    </div>
+    <div class="field" id="f-curSalary" hidden>
+      <label class="flabel" for="curSalary">今年の給与収入（1月〜退職まで）<span class="opt">任意・だいたいでOK</span></label>
+      <div class="unit-input"><input type="number" id="curSalary" inputmode="numeric" min="0" max="3000" step="10" value="0"><span class="unit">万円</span></div>
+    </div>
+    <div class="field" id="f-honSalary" hidden>
+      <label class="flabel" for="honSalary">本業の年収<span class="opt">総支給（額面）・だいたいでOK</span></label>
+      <div class="unit-input"><input type="number" id="honSalary" inputmode="numeric" min="0" max="3000" step="10" value="300"><span class="unit">万円</span></div>
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label class="flabel" for="baseIncome">ふつうの月の売上（見込み額）</label>
+        <div class="unit-input"><input type="number" id="baseIncome" inputmode="numeric" min="0" max="500" step="1" value="30"><span class="unit">万円</span></div>
+      </div>
+      <div class="field">
+        <label class="flabel" for="baseExpense">月の経費<span class="opt">交通費・通信費など</span></label>
+        <div class="unit-input"><input type="number" id="baseExpense" inputmode="numeric" min="0" max="100" step="0.5" value="3"><span class="unit">万円</span></div>
+      </div>
+    </div>
+    <div class="checkrow">
+      <input type="checkbox" id="blue" checked>
+      <label for="blue"><b>青色申告をする</b>（65万円控除。届出ガイドどおり申請していればON）</label>
+    </div>
+    <div class="checkrow">
+      <input type="checkbox" id="over40">
+      <label for="over40"><b>40歳以上</b>（国保に介護保険分が加わります）</label>
+    </div>
+    <div class="btnrow">
+      <button type="button" class="btn primary" id="btnSaveSettings">保存してもどる</button>
+      <button type="button" class="btn" id="btnPrint">印刷・PDF保存</button>
+    </div>
+
+    <h3>アカウント</h3>
+    <div class="grid2">
+      <div class="field">
+        <label class="flabel" for="accName">表示名の変更</label>
+        <input type="text" id="accName" maxlength="20">
+      </div>
+      <div class="field">
+        <label class="flabel" for="accPin">ロック番号の変更<span class="opt">空にすると解除</span></label>
+        <input type="password" id="accPin" inputmode="numeric" maxlength="4" placeholder="4桁 または 空欄">
+      </div>
+    </div>
+    <div class="btnrow">
+      <button type="button" class="btn" id="btnSaveAccount">アカウントを保存</button>
+      <button type="button" class="btn danger" id="btnReset">データをリセット</button>
+      <button type="button" class="btn danger" id="btnDeleteUser">このユーザーを削除</button>
+    </div>
+    <p class="note-s" style="margin-top:8px">入力・領収書はこの端末に自動保存されます（外部には送信されません）。</p>
+  </section>
+</main>
+
+<!-- ================= メイン ================= -->
+<main class="wrap scr" id="scr-main">
+
+  <section class="dash" aria-label="ダッシュボード">
+    <div class="dgrid" id="dash"></div>
+  </section>
+
+  <section class="taskbox" aria-label="やることリスト" id="taskSec">
+    <h2><span class="step">1</span>やることリスト<span class="note-s" id="taskCountLabel"></span></h2>
+    <p class="note-s"><span class="tbadge late">⚠ 期限切れ</span>は納付期限が過ぎた未払い。<span class="tbadge sales">売上</span>は先月までの売上の入力です。期限が土日祝のときは翌平日になります。</p>
+    <div id="taskList"></div>
+  </section>
+
+  <section class="card" aria-label="売上の入力" id="salesSec">
+    <h2><span class="step">2</span>毎月の売上を入力する<span class="note-s" id="gridYearLabel"></span></h2>
+    <p class="note-s">確定申告は1月〜12月のもうけ単位です。終わった月に売上の実額を入れてください（<b>未入力</b>の月は見込み額 <span id="baseEcho"></span> で計算）。来年からの見込みは⚙設定の「ふつうの月の売上」で調整できます。</p>
+    <details class="mgrid" id="gridWrap" open>
+      <summary>入力表をひらく／とじる</summary>
+      <div class="mgrid-inner" id="mgridInner"></div>
+      <div style="padding:0 14px 14px"><button type="button" class="btn" id="btnFillBase" style="min-height:40px">入力をすべてクリアして見込みに戻す</button></div>
+    </details>
+  </section>
+
+  <section class="card" aria-label="領収書ボックス" id="recSec">
+    <h2><span class="step">3</span>領収書ボックス<span class="note-s" id="recCount"></span></h2>
+    <p class="note-s">税金・保険料の領収書や経費のレシートを撮って入れておくと、確定申告のときに探さなくて済みます。</p>
+    <div class="recbar">
+      <label class="btn primary recadd">📷 領収書を追加<input type="file" id="recFile" accept="image/*" multiple></label>
+      <span class="note-s">スマホならその場で撮影できます</span>
+    </div>
+    <div class="reclist" id="recList"></div>
+  </section>
+
+  <section aria-label="結果">
+    <div class="hero">
+      <p class="t">あなたが毎月よけておく額（税金・保険料ぜんぶ込み）</p>
+      <p class="big" id="heroAmt" aria-live="polite">¥—</p>
+      <span class="pct" id="heroPct"></span>
+      <p class="free" id="heroFree"></p>
+      <p class="d">売上が入ったらこの額を別口座へ。請求はぜんぶ後から来るので、これだけで詰みません</p>
+    </div>
+    <div class="card nowcard" id="nowCard"></div>
+    <div class="years" id="years"></div>
+    <p class="note-s" style="margin-top:8px">支払う時期：所得税→翌年3月（確定申告）／住民税→翌年6月から4回／国保・年金→毎月／個人事業税→翌年8月・11月</p>
+    <div class="warnbox" id="typeNote"></div>
+  </section>
+
+  <section class="card" aria-label="支払いスケジュール">
+    <details id="schedWrap">
+      <summary style="list-style:none;cursor:pointer;min-height:44px;display:flex;justify-content:space-between;align-items:center">
+        <h2 style="margin:0"><span class="step">4</span>支払いスケジュール（今日から1年）</h2>
+        <span class="note-s" id="schedToggle">ひらく ＋</span>
+      </summary>
+      <p class="note" style="margin-top:10px">オレンジ枠は支払いが重なる月。今月までの支払いは上の「やることリスト」で管理します。</p>
+      <div id="schedule"></div>
+    </details>
+  </section>
+
+  <section>
+    <details class="mgrid" style="background:#fff">
+      <summary>この数字はどうやって決まるの？（かんたん解説）</summary>
+      <div style="padding:0 14px 14px;font-size:13px;color:var(--ink-2);line-height:1.8">
+        <p>・<b>所得税</b>：売上から経費と各種控除（青色65万円・基礎控除・払った保険料）を引いた「もうけ」に5〜45％の税率。毎年2〜3月の確定申告で自分で払います。</p>
+        <p>・<b>住民税</b>：同じ「もうけ」に約10％。確定申告をすれば自動計算されて、翌年6月に納付書が届きます。</p>
+        <p>・<b>国民健康保険</b>：前の年のもうけで決まります（だから1年目は安く、2年目に上がる）。</p>
+        <p>・<b>国民年金</b>：もうけに関係なく定額（月約17,500円）。</p>
+        <p>・<b>個人事業税</b>：もうけが年290万円を超えた分だけに5％。超えなければ0円です。</p>
+        <p>・このシミュレーターは控除を少なめに見積もっているので、<b>実際の請求はここに出た金額より安くなることが多い</b>です（多めに備える設計）。</p>
+      </div>
+    </details>
+  </section>
+
+</main>
+
+<button type="button" class="fab" id="botFab" hidden>💬 質問する</button>
+<div class="botpanel" id="botPanel" role="dialog" aria-label="質問ボット">
+  <div class="bothead">
+    <div><span class="bt">質問ボット</span><br><span class="bs">税金・手続きのギモンに即答（この端末内で動作）</span></div>
+    <button type="button" class="botclose" id="botClose" aria-label="閉じる">×</button>
+  </div>
+  <div class="botlog" id="botLog"></div>
+  <div class="chips" id="botChips"></div>
+  <form class="botform" id="botForm">
+    <input type="text" id="botInput" placeholder="例：国保が高い" aria-label="質問を入力">
+    <button type="submit">送信</button>
+  </form>
+</div>
+
+<div class="imgview" id="imgView"><img id="imgViewImg" alt="領収書の拡大表示"><button type="button" id="imgViewClose">閉じる</button></div>
+<div class="toast" id="toast"><span id="toastMsg"></span><button type="button" id="toastUndo" hidden>元に戻す</button></div>
+
+<div class="stickybar" id="stickybar" hidden>
+  <div class="in">
+    <span class="l">毎月よけておく額<br>（税金・保険料込み）</span>
+    <span class="v" id="stickyAmt">¥—</span>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <p>※ 金額はすべて概算です（各種控除・自治体の料率・制度改正で前後します）。正確な金額は届く納付書と確定申告で確定します。個別の相談は税務署（無料）または会社の担当者へ。</p>
+    <p>合同会社YOLOs 営業事業部（2026年7月時点の制度にもとづく）</p>
+  </div>
+</footer>
+
+<script>
+/* ============================ CALC-START ============================ */
+const NENKIN_MONTHLY = 17510;          // 国民年金（月）
+const BASIC_DED_IT   = 580000;         // 所得税の基礎控除
+const BASIC_DED_JU   = 430000;         // 住民税の基礎控除
+const BLUE_DED_MAX   = 650000;         // 青色申告特別控除
+const JU_KINTO       = 5500;           // 住民税の均等割（森林環境税込み概算）
+
+function salaryIncome(gross){
+  if(gross<=0) return 0;
+  let ded;
+  if(gross<=1900000) ded = 650000;
+  else if(gross<=3600000) ded = gross*0.3+80000;
+  else if(gross<=6600000) ded = gross*0.2+440000;
+  else if(gross<=8500000) ded = gross*0.1+1100000;
+  else ded = 1950000;
+  return Math.max(0, gross-ded);
+}
+function incomeTaxBase(taxable){
+  if(taxable<=0) return 0;
+  const t = Math.floor(taxable/1000)*1000;
+  let x;
+  if(t<=1950000)      x=t*0.05;
+  else if(t<=3300000) x=t*0.10-97500;
+  else if(t<=6950000) x=t*0.20-427500;
+  else if(t<=9000000) x=t*0.23-636000;
+  else if(t<=18000000)x=t*0.33-1536000;
+  else if(t<=40000000)x=t*0.40-2796000;
+  else                x=t*0.45-4796000;
+  return Math.max(0,x);
+}
+function incomeTax(taxable){
+  return Math.floor(incomeTaxBase(taxable)*1.021/100)*100;
+}
+function kokuhoAnnual(prevIncome, over40){
+  const base = Math.max(0, prevIncome-430000);
+  const rate = 0.105 + (over40?0.019:0);
+  let kinto  = 55000 + (over40?17000:0);
+  if(prevIncome<=430000)          kinto*=0.3;
+  else if(prevIncome<=725000)     kinto*=0.5;
+  else if(prevIncome<=975000)     kinto*=0.8;
+  const cap = 1060000 + (over40?170000:0);
+  return Math.min(Math.round(base*rate+kinto), cap);
+}
+
+function simulate(st){
+  const [sy,sm] = st.startYM.split("-").map(Number);
+  const months = [];
+  for(let i=0;i<48;i++){
+    const y = sy + Math.floor((sm-1+i)/12);
+    const m = (sm-1+i)%12+1;
+    const man = (st.overrides[i]!=null) ? st.overrides[i] : st.baseIncomeMan;
+    months.push({y,m,income:man*10000,expense:st.baseExpenseMan*10000});
+  }
+  const years = {};
+  months.forEach(mm=>{
+    if(!years[mm.y]) years[mm.y]={rev:0,exp:0,act:0};
+    years[mm.y].rev+=mm.income; years[mm.y].exp+=mm.expense; years[mm.y].act++;
+  });
+  const yList = Object.keys(years).map(Number).sort();
+  const isFuku = st.type==="fukugyo";
+
+  const D = {};
+  yList.forEach(y=>{
+    const A = Math.max(0, years[y].rev-years[y].exp);
+    const blue = st.blue ? Math.min(BLUE_DED_MAX, A) : 0;
+    let salGross = 0;
+    if(st.type==="taishoku" && y===sy) salGross = st.curSalaryMan*10000;
+    if(st.type==="fukugyo") salGross = st.honSalaryMan*10000;
+    D[y] = {A, biz:A-blue, sal:salaryIncome(salGross), salGross, act:years[y].act};
+  });
+  const prevYearIncome = (st.type==="taishoku") ? salaryIncome(st.prevSalaryMan*10000) : 0;
+  const incomeOf = y => D[y] ? D[y].biz + D[y].sal : (y===sy-1 ? prevYearIncome : 0);
+
+  const kokuhoPay = {};
+  if(!isFuku){
+    for(let fy=sy-1; fy<=sy+4; fy++){
+      const annual = kokuhoAnnual(incomeOf(fy-1), st.over40);
+      if(annual<=0) continue;
+      let insured=0, cells=[];
+      for(let k=0;k<12;k++){
+        const y = fy + (k>=9?1:0);
+        const m = (k+3)%12+1;
+        const idx = (y-sy)*12+(m-sm);
+        if(idx<0||idx>=48) continue;
+        insured++;
+        if(k>=2) cells.push({y,m});
+      }
+      if(insured===0||cells.length===0) continue;
+      const total = Math.round(annual*insured/12);
+      const per = Math.round(total/cells.length/100)*100;
+      cells.forEach((c,i)=>{
+        const amt = (i===cells.length-1)? total-per*(cells.length-1) : per;
+        const key = c.y+"-"+c.m;
+        kokuhoPay[key]=(kokuhoPay[key]||0)+Math.max(0,amt);
+      });
+    }
+  }
+
+  const nenkinOf = (y,m)=> isFuku?0:NENKIN_MONTHLY;
+
+  const socialPaid = {};
+  months.forEach(mm=>{
+    const key = mm.y+"-"+mm.m;
+    socialPaid[mm.y]=(socialPaid[mm.y]||0)+nenkinOf(mm.y,mm.m)+(kokuhoPay[key]||0);
+  });
+
+  const tax = {};
+  yList.forEach(y=>{
+    const d=D[y]; const sp=socialPaid[y]||0;
+    const salSp = d.salGross*0.14;
+    const itTaxable = Math.max(0, d.biz+d.sal-BASIC_DED_IT-sp-salSp);
+    let it = incomeTax(itTaxable);
+    if(d.salGross>0){
+      const wh = incomeTax(Math.max(0, d.sal-BASIC_DED_IT-salSp));
+      it = Math.max(0, it-wh);
+    }
+    const juCombined = Math.max(0, d.biz+d.sal-BASIC_DED_JU-sp-salSp);
+    let ju;
+    if(st.type==="fukugyo" && d.salGross>0){
+      const juSalOnly = Math.max(0, d.sal-BASIC_DED_JU-salSp);
+      ju = Math.max(0, Math.round((juCombined-juSalOnly)*0.10/100)*100);
+    }else{
+      ju = juCombined>0 ? Math.round((juCombined*0.10+JU_KINTO)/100)*100 : 0;
+    }
+    const jiBase = Math.max(0, d.A - Math.round(2900000*d.act/12));
+    const ji = Math.floor(jiBase*0.05/100)*100;
+    tax[y]={it,ju,ji};
+  });
+  if(st.type==="taishoku" && prevYearIncome>0 && !tax[sy-1]){
+    const spPrev = st.prevSalaryMan*10000*0.14;
+    const juT = Math.max(0, prevYearIncome-BASIC_DED_JU-spPrev);
+    tax[sy-1] = {it:0, ju: juT>0?Math.round((juT*0.10+JU_KINTO)/100)*100:0, ji:0};
+  }
+
+  // 納付期限の実日付（土日祝の場合は翌平日にずれるが、ここでは原則日を表示）
+  const eom=(y,m)=>new Date(y,m,0).getDate();
+  const dueSame=(y,m)=>({dy:y,dm:m,dd:eom(y,m)});                      // その月の末日
+  const dueNext=(y,m)=>{const ny=m===12?y+1:y,nm=m%12+1;return {dy:ny,dm:nm,dd:eom(ny,nm)};}; // 翌月末日
+  const schedule = months.map((mm,idx)=>{
+    const items=[]; const key=mm.y+"-"+mm.m;
+    const py=mm.y-1;
+    if(mm.m===2 && tax[py] && D[py] && (D[py].biz>0||D[py].sal>0)){
+      items.push({ev:true,label:"確定申告の期間（2/16〜3/15）— 会計ソフトで作って提出"});
+    }
+    if(mm.m===3 && tax[py]){
+      const yobi = tax[py-1] && tax[py-1].it>=150000 ? Math.floor(tax[py-1].it/3)*2 : 0;
+      const pay = Math.max(0, tax[py].it - yobi);
+      if(pay>0) items.push({k:"it-"+py,label:"所得税（"+py+"年分）",d:{dy:mm.y,dm:3,dd:15},amt:pay});
+    }
+    if(tax[py] && tax[py].ju>0){
+      const q=Math.round(tax[py].ju/4/100)*100;
+      if(mm.m===6) items.push({k:"ju-"+py+"-1",label:"住民税 第1期（"+py+"年分）",d:dueSame(mm.y,6),amt:tax[py].ju-q*3});
+      if(mm.m===8) items.push({k:"ju-"+py+"-2",label:"住民税 第2期",d:dueSame(mm.y,8),amt:q});
+      if(mm.m===10)items.push({k:"ju-"+py+"-3",label:"住民税 第3期",d:dueSame(mm.y,10),amt:q});
+    }
+    const py2=mm.y-2;
+    if(mm.m===1 && tax[py2] && tax[py2].ju>0){
+      items.push({k:"ju-"+py2+"-4",label:"住民税 第4期（"+py2+"年分）",d:dueSame(mm.y,1),amt:Math.round(tax[py2].ju/4/100)*100});
+    }
+    if(tax[py] && tax[py].ji>0){
+      const h=Math.round(tax[py].ji/2/100)*100;
+      if(mm.m===8) items.push({k:"ji-"+py+"-1",label:"個人事業税 第1期",d:dueSame(mm.y,8),amt:h});
+      if(mm.m===11)items.push({k:"ji-"+py+"-2",label:"個人事業税 第2期",d:dueSame(mm.y,11),amt:tax[py].ji-h});
+    }
+    if(tax[py] && tax[py].it>=150000){
+      const p=Math.floor(tax[py].it/3);
+      if(mm.m===7) items.push({k:"yt-"+py+"-1",label:"所得税の予定納税①",d:dueSame(mm.y,7),amt:p,tag:"前払い・あとで精算"});
+      if(mm.m===11)items.push({k:"yt-"+py+"-2",label:"所得税の予定納税②",d:dueSame(mm.y,11),amt:p,tag:"前払い・あとで精算"});
+    }
+    if(kokuhoPay[key]) items.push({k:"kh-"+mm.y+"-"+mm.m,label:"国民健康保険（"+mm.m+"月分）",d:dueSame(mm.y,mm.m),amt:kokuhoPay[key]});
+    const nk=nenkinOf(mm.y,mm.m);
+    if(nk) items.push({k:"nk-"+mm.y+"-"+mm.m,label:"国民年金（"+mm.m+"月分）",d:dueNext(mm.y,mm.m),amt:nk});
+    const total=items.reduce((s,it)=>s+(it.amt||0),0);
+    return {...mm, idx, items, total};
+  });
+
+  const yearSummary = yList.slice(0,3).map((y,i)=>{
+    const t=tax[y]||{it:0,ju:0,ji:0};
+    const nen = months.filter(mm=>mm.y===y).reduce((s,mm)=>s+nenkinOf(mm.y,mm.m),0);
+    const ko = isFuku?0:Math.round(kokuhoAnnual(incomeOf(y),st.over40) * Math.min(12, D[y]?12:0)/12);
+    return {y, label:(i+1)+"年目", it:t.it, ju:t.ju, ji:t.ji, nen, ko,
+            total:t.it+t.ju+t.ji+nen+ko, rev:years[y].rev};
+  });
+
+  const steady = schedule.slice(24,36).reduce((s,mm)=>s+mm.total,0);
+  const setAside = Math.ceil(steady/12/1000)*1000;
+  const steadyRev = months.slice(24,36).reduce((s,mm)=>s+mm.income,0);
+  const pct = steadyRev>0 ? Math.round(steady/steadyRev*100) : 0;
+
+  return {schedule, yearSummary, setAside, pct, isFuku};
+}
+/* ============================ CALC-END ============================ */
+
+/* ---------- 共通 ---------- */
+const $=s=>document.querySelector(s);
+const yen=n=>"¥"+Math.round(n).toLocaleString("ja-JP");
+const UKEY="yolos-tax-users";
+const LKEY="yolos-tax-last";
+const DKEY=id=>"yolos-tax-data-"+id;
+const AV_COLORS=["#1F3864","#2B6A4F","#8A4B9C","#B3402F","#2B7A9C","#C2661F","#5B5EA6","#3E7C3E"];
+function avColor(name){ let h=0; for(const c of name) h=(h*31+c.charCodeAt(0))>>>0; return AV_COLORS[h%AV_COLORS.length]; }
+
+const DEFAULT_STATE={
+  type:"shinsotsu", startYM:"2026-04",
+  baseIncomeMan:30, baseExpenseMan:3, blue:true, over40:false,
+  prevSalaryMan:300, curSalaryMan:0, honSalaryMan:300,
+  overrides:{}, paid:{}, setupDone:false
+};
+let users=[], me=null, state=null;
+
+function loadUsers(){ try{ users=JSON.parse(localStorage.getItem(UKEY)||"[]"); }catch(e){ users=[]; } }
+function saveUsers(){ localStorage.setItem(UKEY, JSON.stringify(users)); }
+function loadState(id){
+  let s={...DEFAULT_STATE, overrides:{}, paid:{}};
+  try{ const j=JSON.parse(localStorage.getItem(DKEY(id))||"null"); if(j) s=Object.assign(s,j); }catch(e){}
+  return s;
+}
+function save(){ if(me) localStorage.setItem(DKEY(me.id), JSON.stringify(state)); }
+function migrateLegacy(){
+  try{
+    const old=localStorage.getItem("yolos-tax-sim-v1");
+    if(old && users.length===0){
+      const id="u"+Math.random().toString(36).slice(2,8);
+      users.push({id,name:"わたし",pin:""}); saveUsers();
+      const s=Object.assign({...DEFAULT_STATE},JSON.parse(old)); s.setupDone=true;
+      localStorage.setItem(DKEY(id), JSON.stringify(s));
+      localStorage.removeItem("yolos-tax-sim-v1");
+    }
+  }catch(e){}
+}
+
+/* ---------- IndexedDB（領収書） ---------- */
+let idb=null;
+function idbOpen(){
+  return new Promise((res)=>{
+    if(!window.indexedDB){ res(); return; }
+    const r=indexedDB.open("yolos-tax-db",1);
+    r.onupgradeneeded=()=>{ r.result.createObjectStore("receipts",{keyPath:"id"}); };
+    r.onsuccess=()=>{ idb=r.result; res(); };
+    r.onerror=()=>res();
+  });
+}
+function idbPut(rec){ return new Promise((res,rej)=>{ if(!idb){rej();return;} const t=idb.transaction("receipts","readwrite"); t.objectStore("receipts").put(rec); t.oncomplete=res; t.onerror=()=>rej(t.error); }); }
+function idbAll(){ return new Promise((res)=>{ if(!idb){res([]);return;} const t=idb.transaction("receipts","readonly"); const q=t.objectStore("receipts").getAll(); q.onsuccess=()=>res(q.result||[]); q.onerror=()=>res([]); }); }
+function idbDel(id){ return new Promise((res)=>{ if(!idb){res();return;} const t=idb.transaction("receipts","readwrite"); t.objectStore("receipts").delete(id); t.oncomplete=res; t.onerror=res; }); }
+
+const REC_KINDS=["国民年金","国民健康保険","住民税","所得税","個人事業税","経費のレシート","その他"];
+let recCache=[];
+// IndexedDBが使えない環境（一部のfile://等）はlocalStorageに自動フォールバック
+const RKEY=uid=>"yolos-tax-rec-"+uid;
+function lsRecAll(uid){ try{ return JSON.parse(localStorage.getItem(RKEY(uid))||"[]"); }catch(e){ return []; } }
+function lsRecSaveAll(uid,arr){ try{ localStorage.setItem(RKEY(uid),JSON.stringify(arr)); return true; }catch(e){ return false; } }
+async function loadReceipts(){
+  const all=await idbAll();
+  const fromIdb=all.filter(r=>r.uid===me.id);
+  const fromLs=lsRecAll(me.id).map(r=>({...r,_ls:true}));
+  recCache=[...fromIdb,...fromLs].sort((a,b)=>b.ts-a.ts);
+}
+function nowYM(){ const n=new Date(); return n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0"); }
+function imgToDataURL(file){
+  return new Promise((res,rej)=>{
+    const img=new Image(); const url=URL.createObjectURL(file);
+    img.onload=()=>{
+      const MAX=1280; const sc=Math.min(1, MAX/Math.max(img.width,img.height));
+      const c=document.createElement("canvas");
+      c.width=Math.max(1,Math.round(img.width*sc)); c.height=Math.max(1,Math.round(img.height*sc));
+      c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+      URL.revokeObjectURL(url);
+      res(c.toDataURL("image/jpeg",0.72));
+    };
+    img.onerror=()=>{ URL.revokeObjectURL(url); rej(); };
+    img.src=url;
+  });
+}
+async function addReceiptData(dataURL, kind, ym, memo){
+  const rec={id:"r"+Date.now()+Math.random().toString(36).slice(2,6), uid:me.id, ym:ym||nowYM(), kind:kind||"その他", memo:memo||"", data:dataURL, ts:Date.now()};
+  try{ await idbPut(rec); }
+  catch(e){
+    rec._ls=true;
+    const arr=lsRecAll(me.id); arr.unshift(rec);
+    if(!lsRecSaveAll(me.id,arr)){ toast("保存に失敗しました（端末の空き容量を確認）"); return; }
+  }
+  recCache.unshift(rec); renderReceipts(); toast("領収書を保存しました");
+}
+window._addReceiptData=addReceiptData;   // テスト用フック
+async function onRecFiles(files){
+  for(const f of files){
+    try{ const d=await imgToDataURL(f); await addReceiptData(d); }
+    catch(e){ toast("画像を読み込めませんでした"); }
+  }
+}
+function renderReceipts(){
+  const list=$("#recList");
+  $("#recCount").textContent=recCache.length?`（${recCache.length}枚）`:"";
+  if(!recCache.length){
+    list.innerHTML='<div class="recempty">まだ領収書がありません。<br>納付書の半券・コンビニ払いのレシートなどを撮っておきましょう。</div>';
+    return;
+  }
+  list.innerHTML=recCache.map(r=>
+    '<div class="rec" data-rid="'+r.id+'">'+
+      '<img src="'+r.data+'" alt="領収書 '+r.kind+'" loading="lazy">'+
+      '<div class="rmeta">'+
+        '<select aria-label="種類" data-f="kind">'+REC_KINDS.map(k=>'<option'+(k===r.kind?" selected":"")+'>'+k+'</option>').join("")+'</select>'+
+        '<input type="month" aria-label="年月" data-f="ym" value="'+r.ym+'">'+
+        '<input type="text" class="rmemo" aria-label="メモ" data-f="memo" placeholder="メモ（例：4月分・コンビニ払い）" value="'+(r.memo||"").replace(/"/g,"&quot;")+'" maxlength="40">'+
+      '</div>'+
+      '<button type="button" class="rdel" aria-label="削除">🗑</button>'+
+    '</div>').join("");
+  list.querySelectorAll(".rec").forEach(el=>{
+    const id=el.dataset.rid;
+    const rec=recCache.find(x=>x.id===id);
+    el.querySelector("img").addEventListener("click",()=>{ $("#imgViewImg").src=rec.data; $("#imgView").classList.add("on"); });
+    const persist=()=>{
+      if(rec._ls){ const arr=lsRecAll(me.id).map(x=>x.id===rec.id?{...rec,_ls:undefined}:x); lsRecSaveAll(me.id,arr); }
+      else{ idbPut(rec).catch(()=>{}); }
+    };
+    el.querySelectorAll("[data-f]").forEach(inp=>{
+      inp.addEventListener("change",()=>{ rec[inp.dataset.f]=inp.value; persist(); });
+    });
+    el.querySelector(".rdel").addEventListener("click",async()=>{
+      if(!confirm("この領収書を削除しますか？")) return;
+      if(rec._ls){ lsRecSaveAll(me.id, lsRecAll(me.id).filter(x=>x.id!==id)); }
+      else{ await idbDel(id); }
+      recCache=recCache.filter(x=>x.id!==id); renderReceipts();
+    });
+  });
+}
+
+/* ---------- トースト ---------- */
+let toastTimer=null;
+function toast(msg, undoFn){
+  $("#toastMsg").textContent=msg;
+  const u=$("#toastUndo");
+  u.hidden=!undoFn;
+  u.onclick=undoFn?()=>{ undoFn(); hideToast(); }:null;
+  $("#toast").classList.add("on");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(hideToast, 4500);
+}
+function hideToast(){ $("#toast").classList.remove("on"); }
+
+/* ---------- 画面切替 ---------- */
+function show(id){
+  document.querySelectorAll(".scr").forEach(x=>x.classList.remove("on"));
+  $("#"+id).classList.add("on");
+  const inApp = (id==="scr-main"||id==="scr-settings");
+  $("#userbar").hidden = !inApp;
+  $("#botFab").hidden = id!=="scr-main";
+  $("#stickybar").hidden = id!=="scr-main";
+  if(id!=="scr-main") $("#botPanel").classList.remove("on");
+  window.scrollTo(0,0);
+}
+
+/* ---------- ログイン ---------- */
+function renderLogin(){
+  const ul=$("#userlist");
+  if(!users.length){
+    ul.innerHTML='<p class="note" style="text-align:center">まだ誰も登録されていません。<br>下のボタンから1分で始められます。</p>';
+    return;
+  }
+  ul.innerHTML=users.map(u=>{
+    const st=loadState(u.id);
+    const sub=st.setupDone?("開始 "+st.startYM.replace("-","年")+"月〜"):"初期設定の途中";
+    return '<div class="ucardw" data-uw="'+u.id+'">'+
+      '<button type="button" class="ubtn" data-uid="'+u.id+'">'+
+        '<span class="av" style="background:'+avColor(u.name)+'">'+u.name.slice(0,1)+'</span>'+
+        '<span class="uinfo">'+u.name+'<small>'+sub+'</small></span>'+
+        (u.pin?'<span class="lock">🔒</span>':"")+
+      '</button>'+
+      (u.pin?'<div class="pinrow" hidden><input type="password" inputmode="numeric" maxlength="4" placeholder="4桁" aria-label="ロック番号"><button type="button" class="btn primary" style="min-height:44px">開く</button><span class="perr" hidden>番号がちがいます</span></div>':"")+
+    '</div>';
+  }).join("");
+  ul.querySelectorAll(".ubtn").forEach(b=>b.addEventListener("click",()=>{
+    const u=users.find(x=>x.id===b.dataset.uid);
+    if(!u.pin){ login(u); return; }
+    const w=ul.querySelector('[data-uw="'+u.id+'"] .pinrow');
+    ul.querySelectorAll(".pinrow").forEach(p=>p.hidden=true);
+    w.hidden=false; w.querySelector("input").focus();
+    const tryOpen=()=>{
+      if(w.querySelector("input").value===u.pin){ login(u); }
+      else{ w.querySelector(".perr").hidden=false; w.querySelector("input").value=""; w.querySelector("input").focus(); }
+    };
+    w.querySelector(".btn").onclick=tryOpen;
+    w.querySelector("input").onkeydown=e=>{ if(e.key==="Enter") tryOpen(); };
+  }));
+}
+function login(u){
+  me=u; localStorage.setItem(LKEY,u.id);
+  state=loadState(u.id);
+  $("#uchip").innerHTML='<span class="av" style="background:'+avColor(me.name)+'">'+me.name.slice(0,1)+'</span>'+me.name+' さん';
+  loadReceipts().then(()=>{ if(state.setupDone) renderReceipts(); });
+  if(!state.setupDone){ startWizard(); }
+  else{ syncSettingsUI(); buildGrid(); render(); show("scr-main"); }
+}
+function logout(){ me=null; state=null; localStorage.removeItem(LKEY); renderLogin(); show("scr-login"); }
+
+/* ---------- 初期設定ウィザード ---------- */
+const WIZ=[
+  {key:"type", q:"どんな働き方で始めますか？", d:"あとから設定で変えられます。", type:"seg",
+   opts:[["shinsotsu","新卒・学生から始める","去年は大きな収入なし"],["taishoku","会社を辞めて始める","前の会社の給与があった"],["fukugyo","副業として始める","会社員のまま"]]},
+  {key:"startYM", q:"いつから始めますか（始めましたか）？", d:"業務委託の稼働開始月です。", type:"month"},
+  {key:"prevSalaryMan", q:"去年1年間の給与収入はどのくらい？", d:"額面（総支給）でだいたいでOK。1年目の住民税・国保の計算に使います。", type:"num", unit:"万円", showIf:s=>s.type==="taishoku"},
+  {key:"curSalaryMan", q:"今年、退職までにもらった給与は？", d:"わからなければ0のままでOK（あとで直せます）。", type:"num", unit:"万円", showIf:s=>s.type==="taishoku"},
+  {key:"honSalaryMan", q:"本業の年収はどのくらい？", d:"副業のもうけに上乗せされる税金の計算に使います。", type:"num", unit:"万円", showIf:s=>s.type==="fukugyo"},
+  {key:"baseIncomeMan", q:"ふつうの月の売上はどのくらいになりそう？", d:"会社から振り込まれる金額（手取りではありません）。月ごとの実額はあとで入力できます。", type:"num", unit:"万円"},
+  {key:"baseExpenseMan", q:"仕事の経費は月にどのくらい？", d:"交通費・通信費など。迷ったら売上の1割くらいでOK。", type:"num", unit:"万円"},
+  {key:"blue", q:"青色申告をしますか？", d:"届出を1枚出すだけで税金が年数万円安くなる制度。届出ガイドどおり申請するなら「はい」。", type:"bool", yes:"はい（おすすめ）", no:"いいえ・まだ決めてない"},
+  {key:"over40", q:"40歳以上ですか？", d:"国民健康保険に介護保険分が加わるため確認します。", type:"bool", yes:"はい", no:"いいえ"},
+  {key:"_done", q:"設定はこれで完了です！", type:"done"}
+];
+let wizIdx=0;
+function wizSteps(){ return WIZ.filter(st=>!st.showIf||st.showIf(state)); }
+function startWizard(){ wizIdx=0; renderWizard(); show("scr-wizard"); }
+function renderWizard(){
+  const steps=wizSteps(); const stp=steps[wizIdx];
+  $("#wizProg").innerHTML=steps.map((_,i)=>'<i class="'+(i<=wizIdx?"onp":"")+'"></i>').join("");
+  let h='<p class="wiz-q">'+stp.q+'</p>'+(stp.d?'<p class="wiz-d">'+stp.d+'</p>':"");
+  if(stp.type==="seg"){
+    h+='<div class="seg v">'+stp.opts.map(o=>'<button type="button" data-v="'+o[0]+'">'+o[1]+'<span class="sub">'+o[2]+'</span></button>').join("")+'</div>';
+  }else if(stp.type==="month"){
+    h+='<input type="month" id="wizIn" value="'+state.startYM+'" min="2024-01" max="2032-12">';
+    h+='<div class="btnrow"><button type="button" class="btn primary" id="wizNext">つぎへ</button></div>';
+  }else if(stp.type==="num"){
+    h+='<div class="unit-input"><input type="number" id="wizIn" inputmode="numeric" min="0" max="3000" step="1" value="'+state[stp.key]+'"><span class="unit">'+stp.unit+'</span></div>';
+    h+='<div class="btnrow"><button type="button" class="btn primary" id="wizNext">つぎへ</button></div>';
+  }else if(stp.type==="bool"){
+    h+='<div class="seg v"><button type="button" data-v="1">'+stp.yes+'</button><button type="button" data-v="0">'+stp.no+'</button></div>';
+  }else if(stp.type==="done"){
+    const label={shinsotsu:"新卒・学生から",taishoku:"会社を辞めて",fukugyo:"副業"}[state.type];
+    h+='<ul class="wiz-sum">'+
+      '<li><span>働き方</span><b>'+label+'</b></li>'+
+      '<li><span>開始</span><b>'+state.startYM.replace("-","年")+'月</b></li>'+
+      '<li><span>ふつうの月の売上</span><b>'+state.baseIncomeMan+'万円</b></li>'+
+      '<li><span>月の経費</span><b>'+state.baseExpenseMan+'万円</b></li>'+
+      '<li><span>青色申告</span><b>'+(state.blue?"する":"しない")+'</b></li></ul>'+
+      '<p class="wiz-d">この内容でシミュレーションを始めます。数字はあとから⚙設定でいつでも変えられます。</p>'+
+      '<div class="btnrow"><button type="button" class="btn primary wide" id="wizDone">はじめる 🎉</button></div>';
+  }
+  if(wizIdx>0) h+='<div class="btnrow"><button type="button" class="btn" id="wizBack">← もどる</button></div>';
+  $("#wizBody").innerHTML=h;
+
+  const adv=()=>{ wizIdx++; renderWizard(); };
+  document.querySelectorAll("#wizBody .seg button").forEach(b=>b.addEventListener("click",()=>{
+    if(stp.type==="seg") state[stp.key]=b.dataset.v;
+    else state[stp.key]=b.dataset.v==="1";
+    save(); adv();
+  }));
+  const nx=$("#wizNext");
+  if(nx) nx.addEventListener("click",()=>{
+    const v=$("#wizIn").value;
+    if(stp.type==="month"){ if(!v) return; state.startYM=v; }
+    else{ state[stp.key]=parseFloat(v)||0; }
+    save(); adv();
+  });
+  const bk=$("#wizBack");
+  if(bk) bk.addEventListener("click",()=>{ wizIdx=Math.max(0,wizIdx-1); renderWizard(); });
+  const dn=$("#wizDone");
+  if(dn) dn.addEventListener("click",()=>{
+    state.setupDone=true; save();
+    syncSettingsUI(); buildGrid(); render(); renderReceipts(); show("scr-main");
+  });
+}
+
+/* ---------- 設定 ---------- */
+function syncSettingsUI(){
+  $("#startYM").value=state.startYM;
+  $("#baseIncome").value=state.baseIncomeMan;
+  $("#baseExpense").value=state.baseExpenseMan;
+  $("#prevSalary").value=state.prevSalaryMan;
+  $("#curSalary").value=state.curSalaryMan;
+  $("#honSalary").value=state.honSalaryMan;
+  $("#blue").checked=state.blue;
+  $("#over40").checked=state.over40;
+  $("#accName").value=me?me.name:"";
+  $("#accPin").value=me?me.pin:"";
+  document.querySelectorAll("#segType button").forEach(b=>b.classList.toggle("on",b.dataset.type===state.type));
+  $("#f-prevSalary").hidden = state.type!=="taishoku";
+  $("#f-curSalary").hidden  = state.type!=="taishoku";
+  $("#f-honSalary").hidden  = state.type!=="fukugyo";
+}
+
+/* ---------- 売上入力グリッド ---------- */
+function buildGrid(){
+  const inner=$("#mgridInner"); inner.innerHTML="";
+  $("#baseEcho").textContent=state.baseIncomeMan+"万円";
+  const [sy,sm]=state.startYM.split("-").map(Number);
+  const now=new Date(); const cy=now.getFullYear(), cmth=now.getMonth()+1;
+  const idxCur=(cy-sy)*12+(cmth-sm);
+  // 表示は今年（1月〜12月）のみ＝確定申告の単位
+  $("#gridYearLabel").textContent="　"+cy+"年1月〜12月";
+  const from=Math.max(0,(cy-sy)*12+(1-sm));
+  const to=Math.min(47,(cy-sy)*12+(12-sm));
+  if(to<from){
+    inner.innerHTML='<p class="note-s" style="grid-column:1/-1">開始月（'+sy+'年'+sm+'月）になると、ここに売上の入力欄が表示されます。</p>';
+    return;
+  }
+  for(let i=from;i<=to;i++){
+    const y=sy+Math.floor((sm-1+i)/12), m=(sm-1+i)%12+1;
+    const entered=state.overrides[i]!=null;
+    const past=i<idxCur, curr=i===idxCur;
+    const badge= past ? (entered?'<span class="mb mb-ok">入力済み</span>':'<span class="mb mb-miss">未入力</span>')
+               : curr ? '<span class="mb mb-now">今月</span>'+(entered?'<span class="mb mb-ok">入力済み</span>':'')
+               : '<span class="mb">見込み</span>';
+    const valAttr=(past||curr)
+      ? (entered?' value="'+state.overrides[i]+'"':' placeholder="'+state.baseIncomeMan+'"')
+      : ' value="'+(entered?state.overrides[i]:state.baseIncomeMan)+'"';
+    const cell=document.createElement("div"); cell.className="mcell"; cell.id="mc"+i;
+    cell.innerHTML='<label for="ov'+i+'">'+y+'年'+m+'月'+badge+'</label>'+
+      '<div class="unit-input"><input type="number" id="ov'+i+'" data-i="'+i+'" data-pc="'+((past||curr)?1:0)+'"'+((past||curr)?' class="isPast"':'')+' min="0" max="500" step="0.5" inputmode="decimal"'+valAttr+'><span class="unit">万円</span></div>';
+    inner.appendChild(cell);
+  }
+  inner.querySelectorAll("input").forEach(inp=>{
+    inp.addEventListener("input",e=>{
+      const i=Number(e.target.dataset.i); const v=parseFloat(e.target.value);
+      const pc=e.target.dataset.pc==="1";
+      if(pc){ if(isNaN(v)) delete state.overrides[i]; else state.overrides[i]=v; }
+      else{ if(isNaN(v)||v===state.baseIncomeMan) delete state.overrides[i]; else state.overrides[i]=v; }
+      const lb=inner.querySelector('label[for="ov'+i+'"]');
+      if(lb&&pc){ const y=sy+Math.floor((sm-1+i)/12), m=(sm-1+i)%12+1;
+        lb.innerHTML=y+'年'+m+'月'+(i<idxCur?(state.overrides[i]!=null?'<span class="mb mb-ok">入力済み</span>':'<span class="mb mb-miss">未入力</span>'):'<span class="mb mb-now">今月</span>'+(state.overrides[i]!=null?'<span class="mb mb-ok">入力済み</span>':''));
+      }
+      render();
+    });
+  });
+}
+function jumpToSales(i){
+  $("#gridWrap").open=true;
+  const cell=$("#mc"+i);
+  if(cell){
+    cell.scrollIntoView({behavior:"smooth",block:"center"});
+    cell.classList.add("flash");
+    setTimeout(()=>cell.classList.remove("flash"),2000);
+    setTimeout(()=>{ const inp=cell.querySelector("input"); inp&&inp.focus(); },400);
+  }
+}
+
+/* ---------- メイン描画 ---------- */
+function render(){
+  save();
+  const r=simulate(state);
+  $("#heroAmt").innerHTML=yen(r.setAside)+"<small> ／月</small>";
+  $("#stickyAmt").textContent=yen(r.setAside);
+  $("#heroPct").textContent="報酬の約"+r.pct+"％";
+  const freeM=Math.max(0,(state.baseIncomeMan-state.baseExpenseMan)*10000-r.setAside);
+  $("#heroFree").innerHTML="経費と取り分けを引いて、自由に使えるお金の目安 <b>"+yen(freeM)+"</b> ／月";
+
+  const now=new Date(); const cy=now.getFullYear(), cmth=now.getMonth()+1, cd=now.getDate();
+  const [ssy,ssm]=state.startYM.split("-").map(Number);
+  const idxCur=(cy-ssy)*12+(cmth-ssm);
+  const isPaid=it=>!!(it.k&&state.paid[it.k]);
+  const remainOf=mm=>mm.items.reduce((s,it)=>s+((it.amt&&!isPaid(it))?it.amt:0),0);
+  const dnum=d=>d.dy*10000+d.dm*100+d.dd;
+  const todayNum=cy*10000+cmth*100+cd;
+  const dueLong=d=>d.dy+"年"+d.dm+"月"+d.dd+"日";
+  const dueShort=d=>d.dm+"/"+d.dd;
+
+  // いまの見込み
+  const ysNow=r.yearSummary.find(x=>x.y===cy);
+  let nh="<h3>いまの見込み（"+cy+"年"+cmth+"月時点）</h3>";
+  if(ysNow && ysNow.rev>0){
+    const doneCnt=Object.keys(state.overrides).filter(i=>Number(i)<=idxCur).length;
+    nh+='<div class="nowline"><span class="nl">今年の売上（実績＋見込み）<small>'+(doneCnt>0?'実績入力 '+doneCnt+'ヶ月分を反映中':'終わった月の実額を入れるとより正確になります')+'</small></span><span class="nv">'+yen(ysNow.rev)+'</span></div>';
+    nh+='<div class="nowline"><span class="nl">今年のもうけにかかる<b>所得税</b><small>支払いは来年3月の確定申告で</small></span><span class="nv">約'+yen(ysNow.it)+'</span></div>';
+    nh+='<div class="nowline"><span class="nl">今年のもうけにかかる<b>住民税</b><small>支払いは来年6月から4回に分けて</small></span><span class="nv">約'+yen(ysNow.ju)+'</span></div>';
+    if(!r.isFuku) nh+='<div class="nowline"><span class="nl">来年度の<b>国民健康保険</b><small>今年のもうけで決まり、来年6月から</small></span><span class="nv">約'+yen(ysNow.ko)+'／年</span></div>';
+    if(ysNow.ji>0) nh+='<div class="nowline"><span class="nl">今年のもうけにかかる<b>個人事業税</b><small>支払いは来年8月・11月</small></span><span class="nv">約'+yen(ysNow.ji)+'</span></div>';
+  }else{
+    nh+='<div class="nowline"><span class="nl">まだ開始前（または対象期間外）です。開始すると、ここに「今年のもうけにかかる税金がいまいくらか」が表示されます。</span></div>';
+  }
+  const upcoming=r.schedule.filter(mm=>mm.idx>idxCur&&remainOf(mm)>0).slice(0,3);
+  if(upcoming.length){
+    nh+='<div class="nextpay"><b>この先の支払い：</b>'+upcoming.map(mm=>mm.y+"年"+mm.m+"月 "+yen(remainOf(mm))).join("　→　")+'</div>';
+  }
+  $("#nowCard").innerHTML=nh;
+
+  // 年カード
+  const seg=[["it","所得税","c-sho"],["ju","住民税","c-ju"],["ko","国民健康保険","c-ko"],["nen","国民年金","c-ne"],["ji","個人事業税","c-ji"]];
+  $("#years").innerHTML=r.yearSummary.map(ys=>{
+    const bar=seg.map(([k,,c])=>ys.total>0?'<i class="'+c+'" style="width:'+(ys[k]/ys.total*100)+'%"></i>':"").join("");
+    const rows=seg.map(([k,lb,c])=>'<li><span class="lb"><span class="sw '+c+'"></span>'+lb+'</span><span>'+yen(ys[k])+'</span></li>').join("");
+    return '<div class="ycard"><p class="yt">'+ys.label+'（'+ys.y+'年のもうけにかかる分）</p>'+
+      '<p class="ysum">'+yen(ys.total)+'<small> ／年</small></p>'+
+      '<div class="bar">'+bar+'</div><ul class="legend">'+rows+'</ul></div>';
+  }).join("");
+
+  const notes={
+    shinsotsu:"<b>新卒・学生からの人：</b>1年目の請求がほぼないのは「免除」ではなく「翌年に回っている」だけ。取り分けを初月から必ず。親の健康保険の扶養に入っている人は、外れるかどうかを先に親の勤務先へ確認してください。",
+    taishoku:"<b>会社を辞めてきた人：</b>前職の給与ぶんの住民税・国保も反映済みです。所得税は前職で天引き済みの分をざっくり差し引いています（実際は確定申告で精算され、戻ってくることもあります）。",
+    fukugyo:"<b>副業の人：</b>健康保険・年金は会社の社会保険のままなので0円。表示している所得税・住民税は「副業のもうけによって増える分」だけです。住民税は6月から本業の給与天引きに上乗せされる場合があります。"
+  };
+  $("#typeNote").innerHTML=notes[state.type];
+
+  // ---- やることリスト（支払い＋売上入力を統合） ----
+  const tasks=[];
+  r.schedule.forEach(mm=>{
+    if(mm.idx<=idxCur && mm.idx>=0){
+      mm.items.forEach(it=>{ if(!it.ev&&it.amt>0&&!isPaid(it)) tasks.push({tt:"pay",...it,y:mm.y,m:mm.m,late:dnum(it.d)<todayNum}); });
+    }
+  });
+  const salesTasks=[];
+  if(idxCur>0){
+    for(let i=Math.max(0,idxCur-48);i<Math.min(idxCur,48);i++){
+      if(state.overrides[i]==null){
+        const y=ssy+Math.floor((ssm-1+i)/12), m=(ssm-1+i)%12+1;
+        if(y!==cy) continue;                        // 売上の把握は今年（1月〜12月）分だけ
+        salesTasks.push({tt:"sales",i,y,m});
+      }
+    }
+  }
+  const lateT=tasks.filter(t=>t.late), soonT=tasks.filter(t=>!t.late);
+  const lateSum=lateT.reduce((s,t)=>s+t.amt,0);
+  const ordered=[...lateT, ...salesTasks, ...soonT];
+  const paidCount=Object.keys(state.paid).length;
+  $("#taskCountLabel").textContent=ordered.length?`　全${ordered.length}件`:"";
+  let tl="";
+  if(ordered.length){
+    tl=ordered.map(t=>{
+      if(t.tt==="sales"){
+        return '<div class="task sales"><span class="tl"><span class="tbadge sales">売上</span>'+t.y+'年'+t.m+'月分の売上を入力する<small>実額を入れると税額が正確になります</small></span><button type="button" class="gobtn" data-sales="'+t.i+'">入力する</button></div>';
+      }
+      return '<div class="task'+(t.late?" late":"")+'"><span class="tl">'+
+        (t.late?'<span class="tbadge late">⚠ 期限切れ</span>':'<span class="tbadge soon">期限 '+dueShort(t.d)+'</span>')+
+        t.label+'<small>納付期限：'+dueLong(t.d)+'</small></span><span class="ta">'+yen(t.amt)+'</span>'+
+        '<button type="button" class="paybtn" data-k="'+t.k+'" data-lb="'+t.label+'">支払った</button></div>';
+    }).join("");
+    if(tasks.length) tl+='<div class="btnrow"><button type="button" class="btn" data-payall="1" style="border-color:var(--ok);color:var(--ok)">支払いを一括で「支払った」にする</button></div>';
+  }else if(idxCur>=0){
+    tl='<div class="alldone">今月までのやることはぜんぶ完了です！えらい！</div>';
+  }else{
+    tl='<p class="note">まだ開始前です。開始月になるとここにやることが表示されます。</p>';
+  }
+  if(paidCount>0) tl+='<button type="button" class="undo" id="btnUnpay">「支払った」にした '+paidCount+' 件をすべて元に戻す</button>';
+  $("#taskList").innerHTML=tl;
+
+  // ---- スケジュール ----
+  const lo=Math.max(0,idxCur), hi=Math.min(r.schedule.length-1, lo+12);
+  const view=r.schedule.filter(mm=>mm.idx>=lo&&mm.idx<=hi);
+  const avg=view.reduce((s,m)=>s+remainOf(m),0)/Math.max(1,view.length);
+  const groups={};
+  view.forEach(mm=>{ (groups[mm.y]=groups[mm.y]||[]).push(mm); });
+  $("#schedule").innerHTML=Object.keys(groups).sort().map(y=>{
+    const rows=groups[y].map(mm=>{
+      const isCur=mm.idx===idxCur;
+      const remain=remainOf(mm);
+      const heavy=remain>avg*1.6&&remain>0;
+      const items=mm.items.map(it=>{
+        if(it.ev) return '<div class="item ev">'+it.label+'</div>';
+        if(isPaid(it)) return "";
+        return '<div class="item"><span>'+it.label+(it.tag?'<span class="tag">'+it.tag+'</span>':"")+'<span class="due">'+dueShort(it.d)+'まで</span></span><span class="amt">'+yen(it.amt)+'</span></div>';
+      }).join("");
+      const zero=remain===0&&!mm.items.some(it=>it.ev);
+      return '<div class="mrow'+(heavy?" heavy":"")+(zero?" zero":"")+'">'+
+        '<div class="mhead"><span class="mname">'+mm.m+'月'+(isCur?'<span class="badge-heavy" style="background:var(--navy)">今月</span>':"")+(heavy&&!isCur?'<span class="badge-heavy">支払いが重なる月</span>':"")+'</span>'+
+        '<span class="mtotal">'+(zero?"支払いなし":yen(remain))+'</span></div>'+
+        (items?'<div class="items">'+items+'</div>':"")+'</div>';
+    }).join("");
+    return '<div class="ygroup"><div class="yhead">'+y+'年</div>'+rows+'</div>';
+  }).join("");
+
+  // ---- ダッシュボード ----
+  const curMM=r.schedule.find(mm=>mm.idx===idxCur);
+  const curRemain=curMM?remainOf(curMM):0;
+  const miss=salesTasks.length;
+  $("#dash").innerHTML=
+    (lateT.length?
+      '<a class="dcard alert" href="#taskSec"><span class="dt">⚠ 期限切れの未払い</span><span class="dv">'+yen(lateSum)+'</span><span class="ds">'+lateT.length+'件 → タップして確認</span></a>':
+      '<div class="dcard ok"><span class="dt">期限切れの未払い</span><span class="dv">なし</span><span class="ds">ぜんぶ処理済み</span></div>')+
+    '<div class="dcard"><span class="dt">今月これから払う額</span><span class="dv">'+yen(curRemain)+'</span><span class="ds">'+cy+'年'+cmth+'月の残り</span></div>'+
+    (miss>0?
+      '<a class="dcard alert" href="#taskSec"><span class="dt">売上の入力</span><span class="dv">未入力 '+miss+'ヶ月</span><span class="ds">→ やることリストへ</span></a>':
+      '<div class="dcard ok"><span class="dt">売上の入力</span><span class="dv">入力済み</span><span class="ds">先月まで記録ずみ</span></div>')+
+    '<div class="dcard"><span class="dt">今年の所得税（見込み）</span><span class="dv">'+(ysNow&&ysNow.rev>0?"約"+yen(ysNow.it):"—")+'</span><span class="ds">来年3月の確定申告で支払い</span></div>';
+
+  // イベント
+  document.querySelectorAll("#taskList [data-k]").forEach(b=>b.addEventListener("click",()=>{
+    const k=b.dataset.k;
+    state.paid[k]=true; render();
+    toast(b.dataset.lb+" を支払済みにしました", ()=>{ delete state.paid[k]; render(); });
+  }));
+  document.querySelectorAll("#taskList [data-sales]").forEach(b=>b.addEventListener("click",()=>jumpToSales(Number(b.dataset.sales))));
+  const pa=document.querySelector("#taskList [data-payall]");
+  if(pa) pa.addEventListener("click",()=>{
+    const ks=tasks.map(t=>t.k);
+    ks.forEach(k=>{state.paid[k]=true;}); render();
+    toast(ks.length+"件を支払済みにしました", ()=>{ ks.forEach(k=>delete state.paid[k]); render(); });
+  });
+  const up=document.getElementById("btnUnpay");
+  if(up) up.addEventListener("click",()=>{ state.paid={}; render(); });
+}
+
+/* ---------- 質問ボット ---------- */
+const KB=[
+  {k:["使い方","操作","どう使う","何をすれば"], a:"使い方は3つだけ！\n① 「やることリスト」の上から順に片付ける（売上の入力・支払った）\n② 領収書は撮ってボックスへ\n③ 「毎月よけておく額」を別口座にキープ\nこれで未払い管理・確定申告の準備・税金予測がぜんぶ回ります。"},
+  {k:["領収書","レシート","アップロード","写真"], a:"「領収書ボックス」の📷ボタンから追加できます（スマホならその場で撮影OK）。種類・年月・メモをつけて保存され、確定申告のときにここを見返すだけで済みます。画像はこの端末の中だけに保存されます。"},
+  {k:["開業届","開業とどけ","かいぎょう"], a:"開業届は「個人で仕事を始めました」という税務署へのお知らせの紙です。開業から1ヶ月以内が原則ですが、過ぎていても罰則はないので気づいた今出せばOK。書き方は配布の「届出完全ガイド」7章に全欄の記入例があります。"},
+  {k:["青色","あおいろ","65万"], a:"青色申告は「ちゃんと帳簿をつける代わりに税金を安くしてもらえる」制度。申請書1枚で最大65万円の控除＝税金が年数万〜十数万円安くなります。期限は開業から2ヶ月以内。過ぎた場合も今出せば来年から青色になります。"},
+  {k:["確定申告","かくてい","申告いつ"], a:"確定申告は毎年2/16〜3/15に、前の年のもうけを国に報告する手続きです。会計ソフト（freee等）に売上と経費を入れていれば数時間で終わり、税額も自動計算されます。スマホ＋マイナンバーカードのe-Tax提出が一番ラクです。"},
+  {k:["国保","健康保険","保険料 高い","保険高い"], a:"国民健康保険は前年のもうけで金額が決まります（だから1年目は安くて2年目に上がる）。高くて払えないときは放置せず、市役所・区役所の窓口で減免・分割を相談してください。会社都合退職の人は離職票があると軽減制度が使えることがあります。"},
+  {k:["年金","払えない","免除","猶予"], a:"国民年金は月約17,500円の定額です。支払いが厳しいときは「免除・納付猶予」（学生は学生納付特例）を窓口で申請できます。未納のまま放置が一番損なので、必ず相談を。あとから追納もできます。"},
+  {k:["住民税","じゅうみん"], a:"住民税はもうけの約10%。前の年のもうけに対して、翌年6月に納付書が届き、6・8・10・翌1月の4回で払います。「稼いだ翌年にどっと来る」のが特徴なので、取り分けで備えてください。"},
+  {k:["事業税","個人事業税"], a:"個人事業税は、もうけが年290万円を超えた分だけに5%かかる県の税金です。超えなければ0円。確定申告をしていれば手続き不要で、該当する年だけ8月に納付書が届きます。"},
+  {k:["経費","何が経費"], a:"仕事のために使ったお金が経費です。例：営業先への交通費、スマホ・通信費の仕事分、資料代、打合せのカフェ代、自宅家賃の仕事使用分。レシートは領収書ボックスに撮っておき、会計ソフトにも入力しましょう。"},
+  {k:["取り分け","よけて","貯金","いくら残す"], a:"売上の約25%（このアプリの「毎月よけておく額」）を、売上が入ったらすぐ別口座に移すのがおすすめです。税金の請求はぜんぶ「あとから」来るので、これさえ守れば資金ショートしません。"},
+  {k:["インボイス","適格請求書","消費税"], a:"インボイス登録すると消費税の申告義務が発生します。現在の契約では登録は必須ではないので、求められた場合も自己判断せず、まず会社の担当者に相談してください。"},
+  {k:["扶養","親の保険","130万","103万"], a:"親の健康保険の扶養に入っている人は、収入が増えると外れて自分で国保に入る必要があります（目安は年収130万円ですが、健保組合によっては個人事業主は金額に関係なくNGのことも）。まず親の勤務先に確認してもらってください。"},
+  {k:["会社辞め","退職","やめた","離職"], a:"会社を辞めて始める人のやることは：①退職から14日以内に市役所で国保加入＋年金切替 ②前の会社から「資格喪失証明書・源泉徴収票・離職票」をもらう ③開業から1ヶ月以内に税務署へ開業届＋青色申告。詳しくは配布の「届出完全ガイド」3章へ。"},
+  {k:["失業保険","失業手当","ハローワーク"], a:"開業する人は失業保険（基本手当）の対象外が原則です。ただし条件を満たすと「再就職手当」を受け取れる場合があります。開業届を出す前にハローワークで相談するのが安全です。"},
+  {k:["支払い 遅れ","延滞","滞納","払い忘れ"], a:"払い忘れに気づいたら、放置せずすぐ払えばほとんどの場合大ごとになりません（少額の延滞金で済みます）。手元にお金がなければ窓口で分割・猶予を相談してください。「⚠期限切れ」タスクから優先的に片付けましょう。"},
+  {k:["予定納税","前払い"], a:"所得税が年15万円を超えると、翌年7月と11月に「予定納税」という前払いの通知が来ることがあります。前払いした分は次の確定申告で精算されるので損はしません。"},
+  {k:["e-tax","イータックス","マイナンバー"], a:"e-Taxは国税庁のネット提出システムです。マイナンバーカードがあればスマホだけで開業届も確定申告も出せます。カードがない場合は、書類を2部印刷して税務署に持参・郵送でもOKです。"},
+  {k:["屋号"], a:"屋号（お店の名前のようなもの）はなくても一切困りません。あとから確定申告書に書くだけで追加できます。"},
+  {k:["手取り","いくら使える","残るお金"], a:"目安は「売上 − 経費 − 毎月よけておく額」＝自由に使えるお金です。紺色のカードに自動表示されています。"},
+  {k:["会計ソフト","freee","フリー","帳簿"], a:"freee・マネーフォワードなどの会計ソフトに売上と経費を入力しておけば、帳簿も確定申告書も自動で作られます。簿記の知識は不要。月1回まとめて入力するだけでも十分です。"},
+  {k:["ログイン","ユーザー","パスワード","ロック","切替"], a:"このアプリは端末の中に人ごとのデータを保存しています。右上の「ユーザー切替」で別の人に交代でき、ロック番号（4桁）は⚙設定のアカウント欄でいつでも変更・解除できます。"},
+];
+const CHIPS=["国保が高い","青色申告って？","確定申告のやり方","経費になるもの","領収書はどうする？","支払いに遅れた"];
+function botAnswer(q){
+  const qn=q.toLowerCase();
+  let best=null,score=0;
+  KB.forEach(e=>{
+    let s=0; e.k.forEach(kw=>{ if(qn.includes(kw.toLowerCase())) s+=kw.length; });
+    if(s>score){score=s;best=e;}
+  });
+  if(best) return best.a;
+  return "ごめんなさい、その質問はまだ覚えていません…！\n・税金・手続きのこと → 税務署の電話相談（無料）\n・契約・報酬のこと → 会社の担当者\nに聞いてみてください。配布の「届出完全ガイド」と「支払いスケジュール早見表」にも大体のことは載っています。";
+}
+function botPush(text,who){
+  const d=document.createElement("div"); d.className="msg "+who; d.textContent=text;
+  $("#botLog").appendChild(d); $("#botLog").scrollTop=$("#botLog").scrollHeight;
+}
+function botAsk(q){ botPush(q,"me"); setTimeout(()=>botPush(botAnswer(q),"bot"),150); }
+function initBot(){
+  $("#botChips").innerHTML=CHIPS.map(c=>'<button type="button" class="chip">'+c+'</button>').join("");
+  document.querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>botAsk(c.textContent)));
+  $("#botFab").addEventListener("click",()=>{
+    $("#botPanel").classList.add("on");
+    if(!$("#botLog").children.length) botPush("こんにちは！税金や手続きでわからないことがあったら、下のボタンを押すか、ことばで質問してください。","bot");
+    $("#botInput").focus();
+  });
+  $("#botClose").addEventListener("click",()=>$("#botPanel").classList.remove("on"));
+  $("#botForm").addEventListener("submit",e=>{
+    e.preventDefault();
+    const v=$("#botInput").value.trim();
+    if(!v) return;
+    $("#botInput").value="";
+    botAsk(v);
+  });
+}
+
+/* ---------- イベント ---------- */
+function bind(){
+  $("#btnNewUser").addEventListener("click",()=>{ $("#newUserForm").hidden=false; $("#nuName").focus(); });
+  $("#btnCancelNew").addEventListener("click",()=>{ $("#newUserForm").hidden=true; });
+  $("#btnCreateUser").addEventListener("click",()=>{
+    const name=$("#nuName").value.trim();
+    if(!name){ alert("名前を入れてください"); return; }
+    const pin=$("#nuPin").value.trim();
+    if(pin && !/^\d{4}$/.test(pin)){ alert("ロック番号は数字4桁で入れてください"); return; }
+    const u={id:"u"+Math.random().toString(36).slice(2,8), name, pin};
+    users.push(u); saveUsers();
+    $("#newUserForm").hidden=true; $("#nuName").value=""; $("#nuPin").value="";
+    login(u);
+  });
+  $("#btnLogout").addEventListener("click",logout);
+  $("#btnSettings").addEventListener("click",()=>{ syncSettingsUI(); show("scr-settings"); });
+
+  document.querySelectorAll("#segType button").forEach(b=>{
+    b.addEventListener("click",()=>{
+      document.querySelectorAll("#segType button").forEach(x=>x.classList.remove("on"));
+      b.classList.add("on");
+      state.type=b.dataset.type;
+      syncSettingsUI(); save();
+    });
+  });
+  $("#startYM").addEventListener("input",e=>{ if(e.target.value){state.startYM=e.target.value; state.overrides={}; save();} });
+  $("#baseIncome").addEventListener("input",e=>{ state.baseIncomeMan=parseFloat(e.target.value)||0; save(); });
+  $("#baseExpense").addEventListener("input",e=>{ state.baseExpenseMan=parseFloat(e.target.value)||0; save(); });
+  $("#prevSalary").addEventListener("input",e=>{ state.prevSalaryMan=parseFloat(e.target.value)||0; save(); });
+  $("#curSalary").addEventListener("input",e=>{ state.curSalaryMan=parseFloat(e.target.value)||0; save(); });
+  $("#honSalary").addEventListener("input",e=>{ state.honSalaryMan=parseFloat(e.target.value)||0; save(); });
+  $("#blue").addEventListener("change",e=>{ state.blue=e.target.checked; save(); });
+  $("#over40").addEventListener("change",e=>{ state.over40=e.target.checked; save(); });
+  $("#btnSaveSettings").addEventListener("click",()=>{ buildGrid(); render(); show("scr-main"); toast("設定を保存しました"); });
+  $("#btnPrint").addEventListener("click",()=>window.print());
+  $("#btnSaveAccount").addEventListener("click",()=>{
+    const name=$("#accName").value.trim();
+    const pin=$("#accPin").value.trim();
+    if(!name){ alert("名前を入れてください"); return; }
+    if(pin && !/^\d{4}$/.test(pin)){ alert("ロック番号は数字4桁（または空欄）で入れてください"); return; }
+    me.name=name; me.pin=pin; saveUsers();
+    $("#uchip").innerHTML='<span class="av" style="background:'+avColor(me.name)+'">'+me.name.slice(0,1)+'</span>'+me.name+' さん';
+    toast("アカウントを保存しました");
+  });
+  $("#btnReset").addEventListener("click",()=>{
+    if(!confirm(me.name+"さんの入力データをすべて消して、最初の質問からやり直します。よろしいですか？（領収書は残ります）")) return;
+    localStorage.removeItem(DKEY(me.id));
+    state=loadState(me.id); startWizard();
+  });
+  $("#btnDeleteUser").addEventListener("click",async()=>{
+    if(!confirm(me.name+"さんのユーザーを削除します。入力データと領収書もすべて消えます。よろしいですか？")) return;
+    localStorage.removeItem(DKEY(me.id));
+    localStorage.removeItem(RKEY(me.id));
+    for(const r of recCache){ if(!r._ls) await idbDel(r.id); }
+    users=users.filter(u=>u.id!==me.id); saveUsers();
+    logout();
+  });
+
+  $("#btnFillBase").addEventListener("click",()=>{ state.overrides={}; buildGrid(); render(); });
+  const sw=$("#schedWrap");
+  sw.addEventListener("toggle",()=>{ $("#schedToggle").textContent=sw.open?"とじる －":"ひらく ＋"; });
+
+  $("#recFile").addEventListener("change",e=>{ onRecFiles([...e.target.files]); e.target.value=""; });
+  $("#imgViewClose").addEventListener("click",()=>$("#imgView").classList.remove("on"));
+  $("#imgView").addEventListener("click",e=>{ if(e.target.id==="imgView") $("#imgView").classList.remove("on"); });
+
+  initBot();
+}
+
+/* ---------- 起動 ---------- */
+loadUsers(); migrateLegacy(); loadUsers(); bind();
+idbOpen().then(()=>{
+  const lastId=localStorage.getItem(LKEY);
+  const lastUser=users.find(u=>u.id===lastId);
+  if(lastUser && !lastUser.pin){ login(lastUser); }
+  else{ renderLogin(); show("scr-login"); }
+});
+</script>
+</body>
+</html>

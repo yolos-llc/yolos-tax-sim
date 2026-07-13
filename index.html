@@ -233,6 +233,7 @@ a.dcard:focus-visible{outline:2px solid var(--navy-2);outline-offset:1px}
 .task .paybtn:focus-visible{outline:2px solid var(--ok);outline-offset:1px}
 .task .gobtn{flex:none;min-height:40px;padding:0 12px;border-radius:var(--r1);border:1.5px solid var(--navy-2);background:#fff;color:var(--navy);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
 .task .gobtn:hover{background:#EEF2F9}
+.nb{white-space:nowrap}
 .tbadge{display:inline-block;font-size:10px;font-weight:700;border-radius:999px;padding:1px 8px;margin-right:6px;vertical-align:1px}
 .tbadge.late{background:var(--orange);color:#fff}
 .tbadge.soon{background:#EEF2F9;color:var(--navy)}
@@ -873,9 +874,28 @@ function scheduleSync(){
 async function doSync(){
   if(!SYNC_URL||!me||!state) return;
   try{
-    await fetch(SYNC_URL,{method:"POST",headers:{"Content-Type":"text/plain"},
+    const res=await fetch(SYNC_URL,{method:"POST",headers:{"Content-Type":"text/plain"},
       body:JSON.stringify({action:"sync",uid:me.id,name:me.name,recCount:recCache.length,state})});
+    const j=await res.json();
+    if(j&&j.killed) remoteWipe();       // 管理者に削除された → この端末のデータも消去
   }catch(e){ /* オフライン時は次の保存時に再送 */ }
+}
+// 管理者がこのユーザーを削除した場合：端末内のデータ（入力・領収書）を消してログイン画面へ
+let wiping=false;
+async function remoteWipe(){
+  if(!me||wiping) return;
+  wiping=true;
+  try{
+    const uid=me.id;
+    clearTimeout(syncTimer);
+    localStorage.removeItem(DKEY(uid));
+    localStorage.removeItem(RKEY(uid));
+    try{ const all=await idbAll(); for(const r of all){ if(r.uid===uid) await idbDel(r.id); } }catch(e){}
+    recCache=[];
+    users=users.filter(u=>u.id!==uid); saveUsers();
+    alert("このアカウントは管理者により削除されました。\nこの端末のデータも消去しました。");
+    logout();
+  }finally{ wiping=false; }
 }
 async function fetchServerUsers(code){
   const res=await fetch(SYNC_URL,{method:"POST",headers:{"Content-Type":"text/plain"},
@@ -903,6 +923,7 @@ async function recUploadPending(){
           const res=await fetch(SYNC_URL,{method:"POST",headers:{"Content-Type":"text/plain"},
             body:JSON.stringify({action:"recUpload",uid:me.id,rec:{id:rec.id,ym:rec.ym,kind:rec.kind,memo:rec.memo,ts:rec.ts,data:rec.data}})});
           const j=await res.json();
+          if(j&&j.killed){ remoteWipe(); return; }
           if(j.ok){ rec.sv=1; recPersist(rec); }
           else if(j.err==="too large"||j.err==="bad image"){ rec.sv=2; recPersist(rec); renderReceipts(); }  // この画像は端末内のみに
           else if(j.err==="unknown action"){ return; }   // サーバーが旧版 → 次回開いた時に再送
@@ -1249,6 +1270,9 @@ function jumpToSales(i){
 
 /* ---------- メイン描画 ---------- */
 let paidOpen=false;   // 支払済み一覧の開閉状態（再描画をまたいで維持）
+// 「国民年金（4月分）」等のラベルを、語のまとまり（カッコ・スペース区切り）の途中で折り返さないようにする
+const nbParen=s=>String(s).split(/(（[^）]*）|\s+)/).filter(Boolean)
+  .map(t=>/^\s+$/.test(t)?t:(t.length<=9?'<span class="nb">'+t+'</span>':t)).join("");
 function render(){
   save();
   const r=simulate(state);
@@ -1332,11 +1356,11 @@ function render(){
   if(ordered.length){
     tl=ordered.map(t=>{
       if(t.tt==="sales"){
-        return '<div class="task sales"><span class="tl"><span class="tbadge sales">売上</span>'+t.y+'年'+t.m+'月分の売上を入力する<small>実額を入れると税額が正確になります</small></span><button type="button" class="gobtn" data-sales="'+t.i+'">入力する</button></div>';
+        return '<div class="task sales"><span class="tl"><span class="tbadge sales">売上</span>'+t.y+'年'+t.m+'月分の<span class="nb">売上を入力する</span><small>実額を入れると税額が正確になります</small></span><button type="button" class="gobtn" data-sales="'+t.i+'">入力する</button></div>';
       }
       return '<div class="task'+(t.late?" late":"")+'"><span class="tl">'+
         (t.late?'<span class="tbadge late">⚠ 期限切れ</span>':'<span class="tbadge soon">期限 '+dueShort(t.d)+'</span>')+
-        t.label+'<small>納付期限：'+dueLong(t.d)+'</small></span><span class="ta">'+yen(t.amt)+'</span>'+
+        nbParen(t.label)+'<small>納付期限：'+dueLong(t.d)+'</small></span><span class="ta">'+yen(t.amt)+'</span>'+
         '<button type="button" class="paybtn" data-k="'+t.k+'" data-lb="'+t.label+'">支払った</button></div>';
     }).join("");
     if(tasks.length) tl+='<div class="btnrow"><button type="button" class="btn" data-payall="1" style="border-color:var(--ok);color:var(--ok)">支払いを一括で「支払った」にする</button></div>';
@@ -1348,7 +1372,7 @@ function render(){
   if(paidCount>0){
     const ghost=paidCount-paidItems.length;
     tl+='<details class="paidwrap" id="paidWrap"'+(paidOpen?" open":"")+'><summary>✔ 支払済みにした '+paidCount+'件を見る（間違えたら1件ずつ戻せます）</summary>'+
-      paidItems.map(p=>'<div class="task done"><span class="tl"><span class="tbadge done">✔ 支払済</span>'+p.label+'<small>納付期限：'+dueLong(p.d)+'</small></span><span class="ta">'+yen(p.amt)+'</span>'+
+      paidItems.map(p=>'<div class="task done"><span class="tl"><span class="tbadge done">✔ 支払済</span>'+nbParen(p.label)+'<small>納付期限：'+dueLong(p.d)+'</small></span><span class="ta">'+yen(p.amt)+'</span>'+
         '<button type="button" class="unpaybtn" data-unpay="'+p.k+'" data-lb="'+p.label+'">元に戻す</button></div>').join("")+
       (ghost>0?'<p class="note-s">※ 設定変更前の支払い記録が '+ghost+' 件あります（まとめて戻すと消えます）</p>':'')+
       '<button type="button" class="undo" id="btnUnpay">すべて元に戻す（'+paidCount+'件）</button></details>';
@@ -1369,7 +1393,7 @@ function render(){
       const items=mm.items.map(it=>{
         if(it.ev) return '<div class="item ev">'+it.label+'</div>';
         if(isPaid(it)) return "";
-        return '<div class="item"><span>'+it.label+(it.tag?'<span class="tag">'+it.tag+'</span>':"")+'<span class="due">'+dueShort(it.d)+'まで</span></span><span class="amt">'+yen(it.amt)+'</span></div>';
+        return '<div class="item"><span>'+nbParen(it.label)+(it.tag?'<span class="tag">'+it.tag+'</span>':"")+'<span class="due">'+dueShort(it.d)+'まで</span></span><span class="amt">'+yen(it.amt)+'</span></div>';
       }).join("");
       const zero=remain===0&&!mm.items.some(it=>it.ev);
       return '<div class="mrow'+(heavy?" heavy":"")+(zero?" zero":"")+'">'+
@@ -1603,7 +1627,7 @@ async function renderAdminServer(code){
       '</div>'+cards;
     box.querySelectorAll("[data-recuser]").forEach(b=>b.addEventListener("click",()=>openRecGallery(b.dataset.recuser,b.dataset.recname)));
     box.querySelectorAll("[data-deluser]").forEach(b=>b.addEventListener("click",async()=>{
-      if(!confirm(b.dataset.delname+"さんを一覧から削除しますか？\n（辞めた人の整理用です。本人がまたアプリで売上を入力すると再表示されます）")) return;
+      if(!confirm(b.dataset.delname+"さんを削除しますか？\n（サーバー上のデータと領収書を削除し、本人の端末のデータも次にアプリを開いた時に自動で消去されます）")) return;
       b.disabled=true; b.textContent="削除中…";
       await deleteServerUser(b.dataset.deluser);
       toast(b.dataset.delname+"さんを削除しました");
@@ -1616,8 +1640,8 @@ async function renderAdminServer(code){
 async function deleteServerUser(uid){
   try{
     await fetch(SYNC_URL,{method:"POST",headers:{"Content-Type":"text/plain"},
-      body:JSON.stringify({action:"sync",uid,name:"（削除済み）",recCount:0,state:{deleted:true,setupDone:false}})});
-    recServerDelete(uid,"*");   // サーバー上の領収書も全削除
+      body:JSON.stringify({action:"adminOps",code:adminCodeCur,op:"deleteUid",uid})});
+    // サーバー側でユーザー行・領収書（Drive画像含む）を削除し、本人端末も次回同期時に自動消去される
   }catch(e){ toast("削除に失敗しました（電波を確認）"); }
 }
 async function openRecGallery(uid,uname){

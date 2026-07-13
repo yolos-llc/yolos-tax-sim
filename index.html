@@ -127,6 +127,9 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--navy-2);outline
 .aucard .aname small{display:block;font-size:11px;color:var(--ink-3);font-weight:400}
 .aucard .ahead .gobtn{margin-left:auto;flex:none;min-height:40px;padding:0 12px;border-radius:var(--r1);border:1.5px solid var(--navy-2);background:#fff;color:var(--navy);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
 .aucard .ahead .gobtn:hover{background:#EEF2F9}
+.aucard .ahead .audel{margin-left:auto;flex:none;min-height:36px;padding:0 12px;border-radius:var(--r1);border:1.5px solid var(--err);background:#fff;color:var(--err);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.aucard .ahead .audel:hover{background:var(--errbg)}
+.aucard .ahead .audel:disabled{opacity:.5;cursor:default}
 .agrid{display:grid;grid-template-columns:1fr;gap:2px 16px;font-size:13px}
 @media(min-width:600px){.agrid{grid-template-columns:repeat(2,1fr)}}
 .agrid>div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed var(--line);padding:5px 0}
@@ -1457,9 +1460,11 @@ function adminMetrics(st){
   const ys=r.yearSummary.find(x=>x.y===cy)||{rev:0,it:0};
   return {oc,os,miss,rev:ys.rev,it:ys.it,setAside:r.setAside};
 }
-function aucardHTML(name, pin, sub, mt, rc){
+function escAttr(s){ return String(s).replace(/"/g,"&quot;").replace(/</g,"&lt;"); }
+function aucardHTML(name, pin, sub, mt, rc, delUid){
+  const del = delUid ? '<button type="button" class="audel" data-deluser="'+escAttr(delUid)+'" data-delname="'+escAttr(name)+'">削除</button>' : '';
   const head='<div class="ahead"><span class="av" style="background:'+avColor(name)+'">'+name.slice(0,1)+'</span>'+
-    '<span class="aname">'+name+(pin?" 🔒":"")+'<small>'+sub+'</small></span></div>';
+    '<span class="aname">'+name+(pin?" 🔒":"")+'<small>'+sub+'</small></span>'+del+'</div>';
   if(!mt) return '<div class="aucard">'+head+'</div>';
   return '<div class="aucard">'+head+'<div class="agrid">'+
     '<div><span>今年の売上</span><b>'+yen(mt.rev)+'</b></div>'+
@@ -1480,7 +1485,7 @@ async function renderAdminServer(code){
       box.innerHTML='<p class="note-s" style="color:var(--err)">サーバーエラー：'+r.err+'</p>';
       return;
     }
-    r.users=(r.users||[]).filter(u=>HIDDEN_UIDS.indexOf(u.uid)<0);
+    r.users=(r.users||[]).filter(u=>HIDDEN_UIDS.indexOf(u.uid)<0 && !(u.state&&u.state.deleted));
     if(!r.users.length){ box.innerHTML='<p class="note-s">まだ誰も同期されていません。各メンバーがアプリを開いて入力すると自動で届きます。</p>'; return; }
     const typeLabel={shinsotsu:"新卒・学生から",taishoku:"会社を辞めて",fukugyo:"副業"};
     let oc=0, os=0, miss=0;
@@ -1490,7 +1495,7 @@ async function renderAdminServer(code){
       const upd=u.updatedAt?new Date(u.updatedAt):null;
       const sub=((u.state&&u.state.setupDone)?(typeLabel[u.state.type]+'／開始 '+u.state.startYM.replace("-","年")+'月／'):'初期設定が未完了／')+
         '最終同期 '+(upd?((upd.getMonth()+1)+'/'+upd.getDate()):'-');
-      return aucardHTML(u.name||"?", false, sub, mt, u.recCount||0);
+      return aucardHTML(u.name||"?", false, sub, mt, u.recCount||0, u.uid);
     }).join("");
     box.innerHTML=
       '<div class="dgrid" style="margin-bottom:12px">'+
@@ -1500,9 +1505,22 @@ async function renderAdminServer(code){
       (miss?'<div class="dcard alert"><span class="dt">売上の未入力</span><span class="dv">'+miss+'ヶ月分</span><span class="ds">全員合計</span></div>'
            :'<div class="dcard ok"><span class="dt">売上の未入力</span><span class="dv">なし</span><span class="ds">全員入力済み</span></div>')+
       '</div>'+cards;
+    box.querySelectorAll("[data-deluser]").forEach(b=>b.addEventListener("click",async()=>{
+      if(!confirm(b.dataset.delname+"さんを一覧から削除しますか？\n（辞めた人の整理用です。本人がまたアプリで売上を入力すると再表示されます）")) return;
+      b.disabled=true; b.textContent="削除中…";
+      await deleteServerUser(b.dataset.deluser);
+      toast(b.dataset.delname+"さんを削除しました");
+      renderAdminServer();
+    }));
   }catch(e){
     box.innerHTML='<p class="note-s" style="color:var(--err)">サーバーに接続できませんでした（電波・URL設定を確認）</p>';
   }
+}
+async function deleteServerUser(uid){
+  try{
+    await fetch(SYNC_URL,{method:"POST",headers:{"Content-Type":"text/plain"},
+      body:JSON.stringify({action:"sync",uid,name:"（削除済み）",recCount:0,state:{deleted:true,setupDone:false}})});
+  }catch(e){ toast("削除に失敗しました（電波を確認）"); }
 }
 async function renderAdmin(code){
   renderAdminServer(code);

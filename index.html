@@ -397,13 +397,39 @@ footer .wrap{font-size:12px;color:var(--ink-3);line-height:1.8}
         <input type="text" id="nuName" maxlength="20" placeholder="例：小山" autocomplete="off">
       </div>
       <div class="field">
+        <label class="flabel" for="nuLoginId">ユーザーID（半角英数字3〜20文字）<span class="opt">機種変更やデータ復元に使います</span></label>
+        <input type="text" id="nuLoginId" maxlength="20" placeholder="例：yamada01" autocomplete="off" autocapitalize="off">
+      </div>
+      <div class="field">
+        <label class="flabel" for="nuPass">パスワード（4文字以上）</label>
+        <input type="password" id="nuPass" maxlength="30" placeholder="忘れないものを" autocomplete="new-password">
+      </div>
+      <div class="field">
         <label class="flabel" for="nuPin">ロック番号（4桁・任意）<span class="opt">共用端末で見られたくない場合だけ</span></label>
         <input type="password" id="nuPin" inputmode="numeric" maxlength="4" placeholder="なしでもOK" autocomplete="off">
       </div>
+      <p id="nuErr" hidden style="font-size:12px;color:var(--err);font-weight:700"></p>
       <div class="btnrow">
-        <button type="button" class="btn primary" id="btnCreateUser">この名前で始める</button>
+        <button type="button" class="btn primary" id="btnCreateUser">この内容で始める</button>
         <button type="button" class="btn" id="btnCancelNew">キャンセル</button>
       </div>
+    </div>
+    <div class="btnrow" style="margin-top:8px"><button type="button" class="btn wide" id="btnRestoreUser">📲 別の端末で使っていた方（IDでログイン）</button></div>
+    <div id="restoreForm" hidden style="margin-top:16px">
+      <div class="field">
+        <label class="flabel" for="rsLoginId">ユーザーID</label>
+        <input type="text" id="rsLoginId" maxlength="20" autocomplete="off" autocapitalize="off">
+      </div>
+      <div class="field">
+        <label class="flabel" for="rsPass">パスワード</label>
+        <input type="password" id="rsPass" maxlength="30" autocomplete="current-password">
+      </div>
+      <p id="rsErr" hidden style="font-size:12px;color:var(--err);font-weight:700"></p>
+      <div class="btnrow">
+        <button type="button" class="btn primary" id="btnRestoreGo">ログインしてデータを復元</button>
+        <button type="button" class="btn" id="btnCancelRestore">キャンセル</button>
+      </div>
+      <p class="note-s" style="margin-top:6px">売上などの入力データが戻ります（領収書の画像は元の端末とサーバーにのみ保存されています）。</p>
     </div>
     <div style="margin-top:32px;padding-top:12px;border-top:1px dashed var(--line);text-align:center">
       <button type="button" class="undo" id="btnAdminEntry">管理者の方はこちら</button>
@@ -605,6 +631,15 @@ footer .wrap{font-size:12px;color:var(--ink-3);line-height:1.8}
   </form>
 </div>
 
+<div class="recgal" id="claimGate"><div class="rgbox"><div class="rghead"><b>ユーザーIDとパスワードの設定</b></div><div style="padding:14px 16px;overflow-y:auto">
+  <p class="note-s" style="margin-bottom:10px">機種変更やデータ復元のために、あなた専用のIDとパスワードを設定してください（1分で終わります）。</p>
+  <div class="field"><label class="flabel" for="cgLoginId">ユーザーID（半角英数字3〜20文字）</label><input type="text" id="cgLoginId" maxlength="20" autocomplete="off" autocapitalize="off" placeholder="例：yamada01"></div>
+  <div class="field"><label class="flabel" for="cgPass">パスワード（4文字以上）</label><input type="password" id="cgPass" maxlength="30" autocomplete="new-password" placeholder="忘れないものを"></div>
+  <div class="field"><label class="flabel" for="cgPass2">パスワード（確認のためもう一度）</label><input type="password" id="cgPass2" maxlength="30" autocomplete="new-password"></div>
+  <p id="cgErr" hidden style="font-size:12px;color:var(--err);font-weight:700"></p>
+  <div class="btnrow"><button type="button" class="btn primary" id="btnClaimGo">設定する</button></div>
+  <button type="button" class="undo" id="btnClaimLater" style="margin-top:4px">あとで設定する（次回また表示されます）</button>
+</div></div></div>
 <div class="recgal" id="recGal"><div class="rgbox"><div class="rghead"><b id="rgTitle"></b><button type="button" class="gobtn" id="rgClose">閉じる</button></div><div class="rglist" id="rgList"></div></div></div>
 <div class="imgview" id="imgView"><img id="imgViewImg" alt="領収書の拡大表示"><button type="button" id="imgViewClose">閉じる</button></div>
 <div class="toast" id="toast"><span id="toastMsg"></span><button type="button" id="toastUndo" hidden>元に戻す</button></div>
@@ -947,6 +982,19 @@ function recServerDelete(uid,rid){
   fetch(SYNC_URL,{method:"POST",headers:{"Content-Type":"text/plain"},
     body:JSON.stringify({action:"recDelete",uid,rid})}).catch(()=>{});
 }
+
+/* ---------- アカウント（ユーザーID・パスワード） ---------- */
+const LOGIN_ID_RE=/^[A-Za-z0-9_-]{3,20}$/;
+async function svPost(body){
+  const res=await fetch(SYNC_URL,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify(body)});
+  return res.json();
+}
+// 既存ユーザーがまだIDを持っていなければ、設定ゲートを表示（次のログイン時に発行）
+function showClaimGate(){
+  if(!me||me.loginId||!SYNC_URL) return;
+  $("#cgErr").hidden=true; $("#cgLoginId").value=""; $("#cgPass").value=""; $("#cgPass2").value="";
+  $("#claimGate").classList.add("on");
+}
 function migrateLegacy(){
   try{
     const old=localStorage.getItem("yolos-tax-sim-v1");
@@ -1125,7 +1173,7 @@ function login(u){
   $("#uchip").innerHTML='<span class="av" style="background:'+avColor(me.name)+'">'+me.name.slice(0,1)+'</span>'+me.name+' さん';
   loadReceipts().then(()=>{ if(state.setupDone) renderReceipts(); recUploadPending(); });
   if(!state.setupDone){ startWizard(); }
-  else{ syncSettingsUI(); buildGrid(); render(); show("scr-main"); }
+  else{ syncSettingsUI(); buildGrid(); render(); show("scr-main"); setTimeout(showClaimGate,600); }
 }
 function logout(){ me=null; state=null; localStorage.removeItem(LKEY); renderLogin(); show("scr-login"); }
 
@@ -1458,8 +1506,8 @@ const KB=[
   {k:["期限切れ","おそい","遅れてる","赤い","オレンジ"], a:"「⚠期限切れ」は納付期限の日付が過ぎている未払いです。気づいたら早めに払えばほぼ大ごとになりません（少額の延滞金で済みます）。払ったら「支払った」を押して消してください。"},
   {k:["支払った 間違え","戻す","取り消し","誤って"], a:"間違えて「支払った」を押しても大丈夫！やることリスト下部の「✔ 支払済みにした◯件を見る」を開くと、1件ずつ「元に戻す」ボタンで戻せます。押した直後なら画面下の黒い通知の「元に戻す」でもOK。まとめて戻す「すべて元に戻す」もあります。"},
   {k:["領収書","レシート","アップロード","写真","画像"], a:"「領収書ボックス」の📷ボタンから追加できます（スマホならその場で撮影OK・複数枚可）。種類・年月・メモをつけて保存され、確定申告のときにここを見返すだけで済みます。画像はこの端末と会社の管理サーバーの両方に保存されるので、消えても管理者経由で確認できます。"},
-  {k:["機種変更","データ 消え","引き継ぎ","別の端末","バックアップ"], a:"売上などの入力データは会社の管理サーバーに自動同期されているので、消えても管理者が確認できます（新端末への自動復元はまだ未対応なので、機種変更したら初期設定をやり直して売上を入れ直してください）。領収書の画像もサーバーに保存されているので、機種変更しても管理者に見せてもらえます（心配なら端末の写真アプリにも残しておくとより安全）。"},
-  {k:["ログイン","ログアウト","ユーザー","パスワード","ロック","pin","自動"], a:"一度ログインすれば、この端末では次から自動ログインになります（右上の「ログアウト」を押すまで維持）。ロック番号（4桁）は⚙設定のアカウント欄で変更・解除できます。入力データと領収書は端末に保存され、管理用に会社のサーバーへも自動同期されます。"},
+  {k:["機種変更","データ 消え","引き継ぎ","別の端末","バックアップ","復元"], a:"機種変更・別の端末への引き継ぎはかんたん！新しい端末でアプリを開いて「別の端末で使っていた方（IDでログイン）」から、自分のユーザーIDとパスワードでログインすれば、売上などの入力データが自動で復元されます。領収書の画像だけは元の端末とサーバー側に残ります（必要なら管理者が確認できます）。"},
+  {k:["ログイン","ログアウト","ユーザー","パスワード","ロック","pin","自動"], a:"一度ログインすれば、この端末では次から自動ログインになります（右上の「ログアウト」を押すまで維持）。最初に設定するユーザーIDとパスワードは機種変更時のデータ復元用なので、忘れないようにメモを。忘れた場合は管理者に連絡してください。ロック番号（4桁）は⚙設定のアカウント欄で変更・解除できます。"},
   {k:["管理者","管理画面","全員","一括","サーバー"], a:"管理者は、ログイン画面のいちばん下「管理者の方はこちら」から管理者コードでダッシュボードに入れます（初回にコードを設定）。サーバーに同期された全メンバーの売上見込み・税額・期限切れ・未入力・最終同期日を、どの端末からでも一覧できます。各メンバーの「📷 領収書」ボタンから領収書画像の閲覧・削除もできます。"},
   {k:["設定 変え","条件 変え","開始月 変え","青色 変え"], a:"右上の⚙設定から、働き方・開始月・売上見込み・経費・青色申告・年齢をいつでも変えられます。保存すると全部の金額が計算し直されます。"},
   // ===== 開業・届出 =====
@@ -1622,7 +1670,7 @@ async function renderAdminServer(code){
       const mt=(u.state&&u.state.setupDone)?adminMetrics(u.state):null;
       if(mt){ oc+=mt.oc; os+=mt.os; miss+=mt.miss; }
       const upd=u.updatedAt?new Date(u.updatedAt):null;
-      const sub=((u.state&&u.state.setupDone)?(typeLabel[u.state.type]+'／開始 '+u.state.startYM.replace("-","年")+'月／'):'初期設定が未完了／')+
+      const sub=(u.loginId?'ID: '+u.loginId+'／':'ID未設定／')+((u.state&&u.state.setupDone)?(typeLabel[u.state.type]+'／開始 '+u.state.startYM.replace("-","年")+'月／'):'初期設定が未完了／')+
         '最終同期 '+(upd?((upd.getMonth()+1)+'/'+upd.getDate()):'-');
       return aucardHTML(u.name||"?", false, sub, mt, u.recCount||0, u.uid, u.uid);
     }).join("");
@@ -1738,16 +1786,78 @@ async function renderAdmin(code){
 function bind(){
   $("#btnNewUser").addEventListener("click",()=>{ $("#newUserForm").hidden=false; $("#nuName").focus(); });
   $("#btnCancelNew").addEventListener("click",()=>{ $("#newUserForm").hidden=true; });
-  $("#btnCreateUser").addEventListener("click",()=>{
+  $("#btnCreateUser").addEventListener("click",async()=>{
     const name=$("#nuName").value.trim();
-    if(!name){ alert("名前を入れてください"); return; }
+    const lid=$("#nuLoginId").value.trim();
+    const pass=$("#nuPass").value;
     const pin=$("#nuPin").value.trim();
-    if(pin && !/^\d{4}$/.test(pin)){ alert("ロック番号は数字4桁で入れてください"); return; }
-    const u={id:"u"+Math.random().toString(36).slice(2,8), name, pin};
+    const err=$("#nuErr"); const bad=m=>{ err.textContent=m; err.hidden=false; };
+    err.hidden=true;
+    if(!name) return bad("名前を入れてください");
+    if(!LOGIN_ID_RE.test(lid)) return bad("ユーザーIDは半角英数字（-や_も可）3〜20文字で入力してください");
+    if(pass.length<4) return bad("パスワードは4文字以上にしてください");
+    if(pin && !/^\d{4}$/.test(pin)) return bad("ロック番号は数字4桁で入れてください");
+    const u={id:"u"+Math.random().toString(36).slice(2,8), name, pin, loginId:lid};
+    const b=$("#btnCreateUser"); b.disabled=true; b.textContent="登録中…";
+    let registered=false;
+    try{
+      const j=await svPost({action:"register",uid:u.id,name,loginId:lid,pass,state:{}});
+      if(j.ok) registered=true;
+      else if(j.err==="id taken"){ b.disabled=false; b.textContent="この内容で始める"; return bad("このIDはすでに使われています。別の端末で使っていた方は「IDでログイン」からどうぞ"); }
+    }catch(e){}
+    b.disabled=false; b.textContent="この内容で始める";
+    if(!registered){
+      if(!confirm("サーバーに接続できませんでした。オフラインで始めますか？\n（IDとパスワードは、電波のある時に設定画面が自動で出ます）")) return;
+      delete u.loginId;
+    }
     users.push(u); saveUsers();
-    $("#newUserForm").hidden=true; $("#nuName").value=""; $("#nuPin").value="";
+    $("#newUserForm").hidden=true; $("#nuName").value=""; $("#nuPin").value=""; $("#nuLoginId").value=""; $("#nuPass").value="";
     login(u);
   });
+  $("#btnRestoreUser").addEventListener("click",()=>{ const f=$("#restoreForm"); f.hidden=!f.hidden; $("#newUserForm").hidden=true; if(!f.hidden) $("#rsLoginId").focus(); });
+  $("#btnCancelRestore").addEventListener("click",()=>{ $("#restoreForm").hidden=true; });
+  $("#btnRestoreGo").addEventListener("click",async()=>{
+    const lid=$("#rsLoginId").value.trim(), pass=$("#rsPass").value;
+    const err=$("#rsErr"); const bad=m=>{ err.textContent=m; err.hidden=false; }; err.hidden=true;
+    if(!LOGIN_ID_RE.test(lid)||pass.length<4) return bad("IDとパスワードを確認してください");
+    const b=$("#btnRestoreGo"); b.disabled=true; b.textContent="復元中…";
+    try{
+      const j=await svPost({action:"login",loginId:lid,pass});
+      if(j.ok){
+        let u=users.find(x=>x.id===j.uid);
+        if(!u){
+          u={id:j.uid,name:j.name||"?",pin:"",loginId:lid};
+          const st=Object.assign({...DEFAULT_STATE,overrides:{},paid:{}},j.state||{});
+          localStorage.setItem(DKEY(j.uid),JSON.stringify(st));
+          users.push(u);
+        }else{ u.loginId=lid; }
+        saveUsers();
+        $("#restoreForm").hidden=true; $("#rsLoginId").value=""; $("#rsPass").value="";
+        login(u); toast("データを復元しました");
+      }
+      else if(j.err==="not found") bad("このIDは見つかりませんでした");
+      else if(j.err==="wrong pass") bad("パスワードがちがいます");
+      else bad("ログインできませんでした："+j.err);
+    }catch(e){ bad("サーバーに接続できませんでした（電波を確認）"); }
+    b.disabled=false; b.textContent="ログインしてデータを復元";
+  });
+  $("#btnClaimGo").addEventListener("click",async()=>{
+    const lid=$("#cgLoginId").value.trim(), p1=$("#cgPass").value, p2=$("#cgPass2").value;
+    const err=$("#cgErr"); const bad=m=>{ err.textContent=m; err.hidden=false; }; err.hidden=true;
+    if(!LOGIN_ID_RE.test(lid)) return bad("ユーザーIDは半角英数字（-や_も可）3〜20文字で入力してください");
+    if(p1.length<4) return bad("パスワードは4文字以上にしてください");
+    if(p1!==p2) return bad("確認用パスワードが一致しません");
+    const b=$("#btnClaimGo"); b.disabled=true; b.textContent="設定中…";
+    try{
+      const j=await svPost({action:"claim",uid:me.id,loginId:lid,pass:p1,name:me.name,recCount:recCache.length,state});
+      if(j.ok){ me.loginId=lid; saveUsers(); $("#claimGate").classList.remove("on"); toast("IDを設定しました。機種変更のときは「IDでログイン」で復元できます"); }
+      else if(j.killed){ $("#claimGate").classList.remove("on"); remoteWipe(); }
+      else if(j.err==="id taken") bad("このIDはすでに使われています。別のIDにしてください");
+      else bad("設定できませんでした："+j.err);
+    }catch(e){ bad("サーバーに接続できませんでした（電波のある場所であとでもう一度）"); }
+    b.disabled=false; b.textContent="設定する";
+  });
+  $("#btnClaimLater").addEventListener("click",()=>{ $("#claimGate").classList.remove("on"); });
   $("#btnLogout").addEventListener("click",()=>{
     if(confirm("ログアウトしますか？（データは端末に残ります。次に開くと名前の選択から始まります）")) logout();
   });

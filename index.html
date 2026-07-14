@@ -115,9 +115,6 @@ input:focus-visible,select:focus-visible{outline:2px solid var(--navy-2);outline
 .ubtn .av{flex:none;width:44px;height:44px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-size:19px}
 .ubtn .uinfo small{display:block;font-size:11px;color:var(--ink-3);font-weight:400}
 .ubtn .lock{margin-left:auto;font-size:12px;color:var(--ink-3);font-weight:400;flex:none}
-.pinrow{display:flex;gap:8px;padding:0 16px 14px;align-items:center}
-.pinrow input{max-width:150px;text-align:center;letter-spacing:8px;font-size:20px}
-.pinrow .perr{font-size:12px;color:var(--err);font-weight:700}
 
 /* 管理者ダッシュボード */
 .aucard{background:#fff;border:1px solid var(--line);border-radius:var(--r2);box-shadow:var(--shadow);padding:16px;margin-bottom:12px}
@@ -404,10 +401,6 @@ footer .wrap{font-size:12px;color:var(--ink-3);line-height:1.8}
         <label class="flabel" for="nuPass">パスワード（4文字以上）</label>
         <input type="password" id="nuPass" maxlength="30" placeholder="忘れないものを" autocomplete="new-password">
       </div>
-      <div class="field">
-        <label class="flabel" for="nuPin">ロック番号（4桁・任意）<span class="opt">共用端末で見られたくない場合だけ</span></label>
-        <input type="password" id="nuPin" inputmode="numeric" maxlength="4" placeholder="なしでもOK" autocomplete="off">
-      </div>
       <p id="nuErr" hidden style="font-size:12px;color:var(--err);font-weight:700"></p>
       <div class="btnrow">
         <button type="button" class="btn primary" id="btnCreateUser">この内容で始める</button>
@@ -528,10 +521,6 @@ footer .wrap{font-size:12px;color:var(--ink-3);line-height:1.8}
       <div class="field">
         <label class="flabel" for="accName">表示名の変更</label>
         <input type="text" id="accName" maxlength="20">
-      </div>
-      <div class="field">
-        <label class="flabel" for="accPin">ロック番号の変更<span class="opt">空にすると解除</span></label>
-        <input type="password" id="accPin" inputmode="numeric" maxlength="4" placeholder="4桁 または 空欄">
       </div>
     </div>
     <div class="btnrow">
@@ -1147,23 +1136,12 @@ function renderLogin(){
       '<button type="button" class="ubtn" data-uid="'+u.id+'">'+
         '<span class="av" style="background:'+avColor(u.name)+'">'+u.name.slice(0,1)+'</span>'+
         '<span class="uinfo">'+u.name+'<small>'+sub+'</small></span>'+
-        (u.pin?'<span class="lock">🔒</span>':"")+
       '</button>'+
-      (u.pin?'<div class="pinrow" hidden><input type="password" inputmode="numeric" maxlength="4" placeholder="4桁" aria-label="ロック番号"><button type="button" class="btn primary" style="min-height:44px">開く</button><span class="perr" hidden>番号がちがいます</span></div>':"")+
     '</div>';
   }).join("");
   ul.querySelectorAll(".ubtn").forEach(b=>b.addEventListener("click",()=>{
     const u=users.find(x=>x.id===b.dataset.uid);
-    if(!u.pin){ login(u); return; }
-    const w=ul.querySelector('[data-uw="'+u.id+'"] .pinrow');
-    ul.querySelectorAll(".pinrow").forEach(p=>p.hidden=true);
-    w.hidden=false; w.querySelector("input").focus();
-    const tryOpen=()=>{
-      if(w.querySelector("input").value===u.pin){ login(u); }
-      else{ w.querySelector(".perr").hidden=false; w.querySelector("input").value=""; w.querySelector("input").focus(); }
-    };
-    w.querySelector(".btn").onclick=tryOpen;
-    w.querySelector("input").onkeydown=e=>{ if(e.key==="Enter") tryOpen(); };
+    login(u);
   }));
 }
 function login(u){
@@ -1255,7 +1233,6 @@ function syncSettingsUI(){
   $("#blue").checked=state.blue;
   $("#over40").checked=state.over40;
   $("#accName").value=me?me.name:"";
-  $("#accPin").value=me?me.pin:"";
   document.querySelectorAll("#segType button").forEach(b=>b.classList.toggle("on",b.dataset.type===state.type));
   $("#f-prevSalary").hidden = state.type!=="taishoku";
   $("#f-curSalary").hidden  = state.type!=="taishoku";
@@ -1507,7 +1484,7 @@ const KB=[
   {k:["支払った 間違え","戻す","取り消し","誤って"], a:"間違えて「支払った」を押しても大丈夫！やることリスト下部の「✔ 支払済みにした◯件を見る」を開くと、1件ずつ「元に戻す」ボタンで戻せます。押した直後なら画面下の黒い通知の「元に戻す」でもOK。まとめて戻す「すべて元に戻す」もあります。"},
   {k:["領収書","レシート","アップロード","写真","画像"], a:"「領収書ボックス」の📷ボタンから追加できます（スマホならその場で撮影OK・複数枚可）。種類・年月・メモをつけて保存され、確定申告のときにここを見返すだけで済みます。画像はこの端末と会社の管理サーバーの両方に保存されるので、消えても管理者経由で確認できます。"},
   {k:["機種変更","データ 消え","引き継ぎ","別の端末","バックアップ","復元"], a:"機種変更・別の端末への引き継ぎはかんたん！新しい端末でアプリを開いて「別の端末で使っていた方（IDでログイン）」から、自分のユーザーIDとパスワードでログインすれば、売上などの入力データが自動で復元されます。領収書の画像だけは元の端末とサーバー側に残ります（必要なら管理者が確認できます）。"},
-  {k:["ログイン","ログアウト","ユーザー","パスワード","ロック","pin","自動"], a:"一度ログインすれば、この端末では次から自動ログインになります（右上の「ログアウト」を押すまで維持）。最初に設定するユーザーIDとパスワードは機種変更時のデータ復元用なので、忘れないようにメモを。忘れた場合は管理者に連絡してください。ロック番号（4桁）は⚙設定のアカウント欄で変更・解除できます。"},
+  {k:["ログイン","ログアウト","ユーザー","パスワード","ロック","pin","自動"], a:"一度ログインすれば、この端末では次から自動ログインになります（右上の「ログアウト」を押すまで維持）。最初に設定するユーザーIDとパスワードは機種変更時のデータ復元用なので、忘れないようにメモを。忘れた場合は管理者に連絡してください。"},
   {k:["管理者","管理画面","全員","一括","サーバー"], a:"管理者は、ログイン画面のいちばん下「管理者の方はこちら」から管理者コードでダッシュボードに入れます（初回にコードを設定）。サーバーに同期された全メンバーの売上見込み・税額・期限切れ・未入力・最終同期日を、どの端末からでも一覧できます。各メンバーの「📷 領収書」ボタンから領収書画像の閲覧・削除もできます。"},
   {k:["設定 変え","条件 変え","開始月 変え","青色 変え"], a:"右上の⚙設定から、働き方・開始月・売上見込み・経費・青色申告・年齢をいつでも変えられます。保存すると全部の金額が計算し直されます。"},
   // ===== 開業・届出 =====
@@ -1633,7 +1610,7 @@ function aucardHTML(name, pin, sub, mt, rc, delUid, recUid){
   const recb = recUid ? '<button type="button" class="recbtn" data-recuser="'+escAttr(recUid)+'" data-recname="'+escAttr(name)+'">📷 領収書</button>' : '';
   const del = delUid ? '<button type="button" class="audel" data-deluser="'+escAttr(delUid)+'" data-delname="'+escAttr(name)+'">削除</button>' : '';
   const head='<div class="ahead"><span class="av" style="background:'+avColor(name)+'">'+escAttr(name.slice(0,1))+'</span>'+
-    '<span class="aname">'+escAttr(name)+(pin?" 🔒":"")+'<small>'+escAttr(sub)+'</small></span>'+recb+del+'</div>';
+    '<span class="aname">'+escAttr(name)+'<small>'+escAttr(sub)+'</small></span>'+recb+del+'</div>';
   if(!mt) return '<div class="aucard">'+head+'</div>';
   return '<div class="aucard">'+head+'<div class="agrid">'+
     '<div><span>今年の売上</span><b>'+yen(mt.rev)+'</b></div>'+
@@ -1764,7 +1741,7 @@ async function renderAdmin(code){
   const typeLabel={shinsotsu:"新卒・学生から",taishoku:"会社を辞めて",fukugyo:"副業"};
   $("#adminList").innerHTML = rows.length ? rows.map(({u,st,mt,rc})=>{
     const head='<div class="ahead"><span class="av" style="background:'+avColor(u.name)+'">'+escAttr(u.name.slice(0,1))+'</span>'+
-      '<span class="aname">'+escAttr(u.name)+(u.pin?" 🔒":"")+'<small>'+escAttr(st.setupDone?(typeLabel[st.type]+'／開始 '+st.startYM.replace("-","年")+'月'):'初期設定が未完了')+'</small></span>'+
+      '<span class="aname">'+escAttr(u.name)+'<small>'+escAttr(st.setupDone?(typeLabel[st.type]+'／開始 '+st.startYM.replace("-","年")+'月'):'初期設定が未完了')+'</small></span>'+
       '<button type="button" class="gobtn" data-open="'+escAttr(u.id)+'">この人の画面を開く</button></div>';
     if(!mt) return '<div class="aucard">'+head+'</div>';
     return '<div class="aucard">'+head+'<div class="agrid">'+
@@ -1790,14 +1767,12 @@ function bind(){
     const name=$("#nuName").value.trim();
     const lid=$("#nuLoginId").value.trim();
     const pass=$("#nuPass").value;
-    const pin=$("#nuPin").value.trim();
     const err=$("#nuErr"); const bad=m=>{ err.textContent=m; err.hidden=false; };
     err.hidden=true;
     if(!name) return bad("名前を入れてください");
     if(!LOGIN_ID_RE.test(lid)) return bad("ユーザーIDは半角英数字（-や_も可）3〜20文字で入力してください");
     if(pass.length<4) return bad("パスワードは4文字以上にしてください");
-    if(pin && !/^\d{4}$/.test(pin)) return bad("ロック番号は数字4桁で入れてください");
-    const u={id:"u"+Math.random().toString(36).slice(2,8), name, pin, loginId:lid};
+    const u={id:"u"+Math.random().toString(36).slice(2,8), name, pin:"", loginId:lid};
     const b=$("#btnCreateUser"); b.disabled=true; b.textContent="登録中…";
     let registered=false;
     try{
@@ -1811,7 +1786,7 @@ function bind(){
       delete u.loginId;
     }
     users.push(u); saveUsers();
-    $("#newUserForm").hidden=true; $("#nuName").value=""; $("#nuPin").value=""; $("#nuLoginId").value=""; $("#nuPass").value="";
+    $("#newUserForm").hidden=true; $("#nuName").value=""; $("#nuLoginId").value=""; $("#nuPass").value="";
     login(u);
   });
   $("#btnRestoreUser").addEventListener("click",()=>{ const f=$("#restoreForm"); f.hidden=!f.hidden; $("#newUserForm").hidden=true; if(!f.hidden) $("#rsLoginId").focus(); });
@@ -1924,10 +1899,8 @@ function bind(){
   $("#btnPrint").addEventListener("click",()=>window.print());
   $("#btnSaveAccount").addEventListener("click",()=>{
     const name=$("#accName").value.trim();
-    const pin=$("#accPin").value.trim();
     if(!name){ alert("名前を入れてください"); return; }
-    if(pin && !/^\d{4}$/.test(pin)){ alert("ロック番号は数字4桁（または空欄）で入れてください"); return; }
-    me.name=name; me.pin=pin; saveUsers();
+    me.name=name; me.pin=""; saveUsers();
     $("#uchip").innerHTML='<span class="av" style="background:'+avColor(me.name)+'">'+me.name.slice(0,1)+'</span>'+me.name+' さん';
     toast("アカウントを保存しました");
   });
